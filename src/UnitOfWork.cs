@@ -14,12 +14,13 @@ namespace DoctorsAppointmentDB
         {
             _context = context;
         }
+        public TContext Context => _context;
         public void Dispose()
         {
             _context.Dispose();
         }
 
-        IRepository<T> IUnitOfWork.GetRepository<T>()
+        public IRepository<T> GetRepository<T>() where T : class, IId
         {
             return new Repository<T>(_context);
         }

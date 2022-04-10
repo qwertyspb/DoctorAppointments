@@ -15,15 +15,15 @@ namespace DoctorsAppointmentDB
         {
             using var context = new DocVisitContext();
             using var uow = new UnitOfWork<DocVisitContext>(context);
-            RemoveAll(uow);
-            AddPatients();
-            AddDoctors();
 
-            // Getrepository Doctors ToList
-            // add uow everywhere
+            var appointment = uow.GetRepository<Appointment>();
+
+            RemoveAll(uow);
+            AddPatients(uow);
+            AddDoctors(uow);
+
             var doc = context.Doctors.ToList();
             var pnt = context.Patients.ToList();
-            var appointment = GetRepository<Appointment>(context);
             appointment.Create(new Appointment
             {
                 Doctor = doc[0],
@@ -46,24 +46,25 @@ namespace DoctorsAppointmentDB
                 EndTime = DateTime.Now.AddMinutes(76)
             });
 
-            MakeAllTests(context);
+            MakeAllTests(uow);
+
         }
 
-        public void MakeAllTests(DocVisitContext context)
+        public void MakeAllTests(IUnitOfWork _uow)
         {
-            TestCreateAp(context);
-            TestCheckIntersection(context);
-            TestGetAllAppointments(context);
+            var unitOfWork = (UnitOfWork<DocVisitContext>)_uow;
+            TestCreateAp(_uow);
+            TestCheckIntersection(unitOfWork);
+            TestGetAllAppointments(unitOfWork);
 
             Console.WriteLine();
             Console.WriteLine("Проверочные операции выполнены.");
         }
-        public void TestCreateAp(DocVisitContext context)
+        public void TestCreateAp(IUnitOfWork _uow)
         {
             Console.WriteLine();
             Console.WriteLine("Проверка добавления назначений:");
-            var doctor = GetRepository<Doctor>(context);
-            var data = doctor.Query();
+            var data = _uow.GetRepository<Doctor>().Query();
             int counter = 0;
             foreach (var d in data.Include(a => a.Appointments).ToList())
             {
@@ -79,12 +80,12 @@ namespace DoctorsAppointmentDB
                 Console.WriteLine();
             }
         }
-        public void TestCheckIntersection(DocVisitContext context)
+        public void TestCheckIntersection(UnitOfWork<DocVisitContext> _uow)
         {
             Console.WriteLine();
             Console.WriteLine("Проверка метода CheckIntersection:");
-            var appRepo = new AppointmentRepository(context);
-            var app = context.Appointments.ToList();
+            var appRepo = new AppointmentRepository(_uow.Context);
+            var app = appRepo.Query().ToList();
             int counter = 0;
             foreach (var a in app)
                 if (appRepo.CheckIntersection(a.Id, a.StartTime, a.EndTime))
@@ -97,13 +98,13 @@ namespace DoctorsAppointmentDB
                 Console.WriteLine($"Пересечений по времени нет.");
             }
         }
-        private void TestGetAllAppointments(DocVisitContext context)
+        private void TestGetAllAppointments(UnitOfWork<DocVisitContext> _uow)
         {
             Console.WriteLine();
             var t1 = DateTime.Today.AddDays(1);
             var t2 = DateTime.Today.AddDays(2);
             Console.WriteLine($"Проверка поиска назначений за период: {t1} - {t2} :");
-            var appRepo = new AppointmentRepository(context);
+            var appRepo = new AppointmentRepository(_uow.Context);
             var data = appRepo.GetAllAppointments(t1, t2);
             int counter = 0;
             foreach (var d in data)
@@ -117,46 +118,27 @@ namespace DoctorsAppointmentDB
                 Console.WriteLine("В заданный промежуток времени назначений нет.");
         }
 
-        public void AddDoctors()
+        public void AddDoctors(IUnitOfWork _uow)
         {
-            using var context = new DocVisitContext();
-            var doctor = GetRepository<Doctor>(context);
-            doctor.Create(new Doctor { Name = "Сергей Сергеев", Room = 11 });
-            doctor.Create(new Doctor { Name = "Иван Иванов", Room = 22 });
-            doctor.Create(new Doctor { Name = "Семен Семенов", Room = 33 });
+            _uow.GetRepository<Doctor>().Create(new Doctor { Name = "Сергей Сергеев", Room = 11 });
+            _uow.GetRepository<Doctor>().Create(new Doctor { Name = "Иван Иванов", Room = 22 });
+            _uow.GetRepository<Doctor>().Create(new Doctor { Name = "Семен Семенов", Room = 33 });
         }
-        public void AddPatients()
+        public void AddPatients(IUnitOfWork _uow)
         {
-            using var context = new DocVisitContext();
-            var patient = GetRepository<Patient>(context);
-            patient.Create(new Patient { Name = "Серёжа" });
-            patient.Create(new Patient { Name = "Ваня" });
-            patient.Create(new Patient { Name = "Сёма" });
+            var repo = _uow.GetRepository<Patient>();
+            repo.Create(new Patient { Name = "Серёжа" });
+            repo.Create(new Patient { Name = "Ваня" });
+            repo.Create(new Patient { Name = "Сёма" });
         }
 
-        public static void RemoveAll(IUnitOfWork uow)
+        public static void RemoveAll(IUnitOfWork _uow)
         {
             Console.WriteLine("Очистка базы данных");
-            uow.GetRepository<Appointment>().Delete(a => true);
-            uow.GetRepository<Doctor>().Delete(a => true);
-            uow.GetRepository<Patient>().Delete(a => true);
+            _uow.GetRepository<Appointment>().Delete(a => true);
+            _uow.GetRepository<Doctor>().Delete(a => true);
+            _uow.GetRepository<Patient>().Delete(a => true);
         }
-
-
-        // Инфо
-        // Сгруппированно по докторам
-
-        //foreach (var d in db.Doctors.Include(a => a.Appointments))
-        //{
-        //    Console.WriteLine($"Врач: {d.DoctorName}, каб.: {d.DoctorRoom}");
-        //    foreach (var a in d.Appointments)
-        //    {
-        //        Console.WriteLine($"{a.Patient.PatientName}, {a.StartTime} - {a.EndTime}");
-        //    }
-        //    Console.WriteLine();
-        //}
-        //Console.WriteLine();
-
 
         // Красиво написанный AddAppointments. Понадобится ли?
 
