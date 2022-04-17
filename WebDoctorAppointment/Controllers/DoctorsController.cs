@@ -1,13 +1,9 @@
 ﻿using AutoMapper;
-using DocAppLibrary;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -53,12 +49,11 @@ namespace WebDoctorAppointment.Controllers
         //    return View(doctor);
         //}
 
-        // get: movies/create
         [AcceptVerbs("GET", "POST")]
         public IActionResult DoesRoomExist(int room)
         {
             var result =  _context.GetRepository<Doctor>().Query().Any(x => x.Room == room);
-            return Json(result);
+            return Json(!result);
         }
         public IActionResult Create()
         {
