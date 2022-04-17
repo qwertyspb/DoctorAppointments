@@ -5,7 +5,11 @@ VisualStudioVersion = 16.0.32228.343
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DoctorsAppointmentDB", "src\DoctorsAppointmentDB.csproj", "{D61966FE-946D-4BE6-B766-BF0D9103CBE1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebDoctorAppointment", "WebDoctorAppointment\WebDoctorAppointment.csproj", "{8F8915A1-0268-412F-BC70-36E89D358F39}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebDoctorAppointment", "WebDoctorAppointment\WebDoctorAppointment.csproj", "{8F8915A1-0268-412F-BC70-36E89D358F39}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DocAppLibrary", "DocAppLibrary\DocAppLibrary.csproj", "{1A64D6C4-2C0C-4E2C-B4FC-DAFABF2A2848}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{C844009C-9BDF-4417-B3C4-35A01303A948}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{8F8915A1-0268-412F-BC70-36E89D358F39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F8915A1-0268-412F-BC70-36E89D358F39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F8915A1-0268-412F-BC70-36E89D358F39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A64D6C4-2C0C-4E2C-B4FC-DAFABF2A2848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A64D6C4-2C0C-4E2C-B4FC-DAFABF2A2848}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A64D6C4-2C0C-4E2C-B4FC-DAFABF2A2848}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A64D6C4-2C0C-4E2C-B4FC-DAFABF2A2848}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C844009C-9BDF-4417-B3C4-35A01303A948}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C844009C-9BDF-4417-B3C4-35A01303A948}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C844009C-9BDF-4417-B3C4-35A01303A948}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C844009C-9BDF-4417-B3C4-35A01303A948}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

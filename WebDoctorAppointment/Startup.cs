@@ -1,6 +1,9 @@
+using DocAppLibrary;
+using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,6 +27,8 @@ namespace WebDoctorAppointment
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+            services.AddDbContext<DocVisitContext>(opt => opt.UseSqlite(Configuration.GetConnectionString("DbConnection")));
+            services.AddScoped<IUnitOfWork, UnitOfWork<DocVisitContext>>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
