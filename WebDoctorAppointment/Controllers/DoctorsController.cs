@@ -1,13 +1,10 @@
 ﻿using AutoMapper;
-using DocAppLibrary;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -17,9 +14,9 @@ namespace WebDoctorAppointment.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
-        public DoctorsController(IUnitOfWork context)
+        public DoctorsController(IUnitOfWork unitOfWork)
         {
-            _unitOfWork = context;
+            _unitOfWork = unitOfWork;
             _mapper = new MapperConfiguration(x => 
             {
                 x.CreateMap<Doctor, DoctorViewModel>();
@@ -78,12 +75,14 @@ namespace WebDoctorAppointment.Controllers
             return View(docmodel);
         }
 
-        // POST: Movies/Edit/5
+        // POST: Doctors/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, DoctorViewModel docmodel)
         {
-            if (id != docmodel.Id)
+            var doctor = _mapper.Map<Doctor>(docmodel);
+
+            if (id != doctor.Id)
             {
                 return NotFound();
             }
@@ -92,12 +91,11 @@ namespace WebDoctorAppointment.Controllers
             {
                 try
                 {
-                    _context.Update(docmodel);
-                    await _context.SaveChangesAsync();
+                    _unitOfWork.GetRepository<Doctor>().Update(doctor);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!DoctorExists(docmodel.Id))
+                    if (!DoctorExists(doctor.Id))
                     {
                         return NotFound();
                     }
@@ -111,38 +109,35 @@ namespace WebDoctorAppointment.Controllers
             return View(docmodel);
         }
 
-        //// GET: Movies/Delete/5
-        //public async Task<IActionResult> Delete(int? id)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
+        // GET: Doctor/Delete/5
+        public IActionResult Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-        //    var doctor = await _context.Doctors
-        //        .FirstOrDefaultAsync(m => m.Id == id);
-        //    if (doctor == null)
-        //    {
-        //        return NotFound();
-        //    }
+            var doctor = _unitOfWork.GetRepository<Doctor>().GetById((int)id);
+            var docmodel = _mapper.Map<DoctorViewModel>(doctor);
+            if (docmodel == null)
+            {
+                return NotFound();
+            }
+            return View(docmodel);
+        }
 
-        //    return View(doctor);
-        //}
+        // POST: Doctors/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
+        {
+            _unitOfWork.GetRepository<Doctor>().Delete(id);
+            return RedirectToAction(nameof(Index));
+        }
 
-        //// POST: Movies/Delete/5
-        //[HttpPost, ActionName("Delete")]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> DeleteConfirmed(int id)
-        //{
-        //    var doctor = await _context.Doctors.FindAsync(id);
-        //    _context.Doctors.Remove(doctor);
-        //    await _context.SaveChangesAsync();
-        //    return RedirectToAction(nameof(Index));
-        //}
-
-        //private bool DoctorExists(int id)
-        //{
-        //    return _context.Doctors.Any(e => e.Id == id);
-        //}
+        private bool DoctorExists(int id)
+        {
+            return _unitOfWork.GetRepository<Doctor>().Query().Any(d => d.Id == id);
+        }
     }
 }
