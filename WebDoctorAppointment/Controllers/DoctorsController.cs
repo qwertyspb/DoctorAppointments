@@ -14,12 +14,12 @@ namespace WebDoctorAppointment.Controllers
 {
     public class DoctorsController : Controller
     {
-        private readonly IUnitOfWork _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
 
         public DoctorsController(IUnitOfWork context)
         {
-            _context = context;
+            _unitOfWork = context;
             _mapper = new MapperConfiguration(x => 
             {
                 x.CreateMap<Doctor, DoctorViewModel>();
@@ -30,35 +30,17 @@ namespace WebDoctorAppointment.Controllers
         // GET: Doctors
         public IActionResult Index()
         {
-            var doctors = _context.GetRepository<Doctor>().Query().ToList();
+            var doctors = _unitOfWork.GetRepository<Doctor>().Query().ToList();
             var docmodels = _mapper.Map<List<DoctorViewModel>>(doctors);
             return View(docmodels);
         }
 
-        // GET: Doctots/Details/5
-        //public async Task<IActionResult> Details(int? id)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    var doctor = await _context.Doctors
-        //        .FirstOrDefaultAsync(m => m.Id == id);
-        //    if (doctor == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    return View(doctor);
-        //}
-
-        // get: movies/create
+        // get: Doctors/Create
         [AcceptVerbs("GET", "POST")]
         public IActionResult DoesRoomExist(int room)
         {
-            var result =  _context.GetRepository<Doctor>().Query().Any(x => x.Room == room);
-            return Json(result);
+            var result =  _unitOfWork.GetRepository<Doctor>().Query().Any(x => x.Room == room);
+            return Json(!result);
         }
         public IActionResult Create()
         {
@@ -66,8 +48,6 @@ namespace WebDoctorAppointment.Controllers
         }
 
         // POST: Doctors/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Create(DoctorViewModel docmodel)
@@ -75,62 +55,61 @@ namespace WebDoctorAppointment.Controllers
             if (ModelState.IsValid)
             {
                 var doctor = _mapper.Map<Doctor>(docmodel);
-                _context.GetRepository<Doctor>().Create(doctor);
+                _unitOfWork.GetRepository<Doctor>().Create(doctor);
                 return RedirectToAction(nameof(Index));
             }
             return View(docmodel);
         }
 
-        //// GET: Movies/Edit/5
-        //public async Task<IActionResult> Edit(int? id)
-        //{
-        //    if (id == null)
-        //    {
-        //        return NotFound();
-        //    }
+        // GET: Doctors/Edit/5
+        public IActionResult Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-        //    var doctor = await _context.Doctors.FindAsync(id);
-        //    if (doctor == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return View(doctor);
-        //}
+            var doctor = _unitOfWork.GetRepository<Doctor>().GetById((int)id);
+            var docmodel = _mapper.Map<DoctorViewModel>(doctor);
+            if (docmodel == null)
+            {
+                return NotFound();
+            }
+            return View(docmodel);
+        }
 
-        //// POST: Movies/Edit/5
-        //// To protect from overposting attacks, enable the specific properties you want to bind to.
-        //// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        //[HttpPost]
-        //[ValidateAntiForgeryToken]
-        //public async Task<IActionResult> Edit(int id, [Bind("Id,Title,ReleaseDate,Genre,Price")] DoctorViewModel doctor)
-        //{
-        //    if (id != doctor.Id)
-        //    {
-        //        return NotFound();
-        //    }
+        // POST: Movies/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(int id, DoctorViewModel docmodel)
+        {
+            if (id != docmodel.Id)
+            {
+                return NotFound();
+            }
 
-        //    if (ModelState.IsValid)
-        //    {
-        //        try
-        //        {
-        //            _context.Update(doctor);
-        //            await _context.SaveChangesAsync();
-        //        }
-        //        catch (DbUpdateConcurrencyException)
-        //        {
-        //            if (!DoctorExists(doctor.Id))
-        //            {
-        //                return NotFound();
-        //            }
-        //            else
-        //            {
-        //                throw;
-        //            }
-        //        }
-        //        return RedirectToAction(nameof(Index));
-        //    }
-        //    return View(doctor);
-        //}
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(docmodel);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!DoctorExists(docmodel.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(docmodel);
+        }
 
         //// GET: Movies/Delete/5
         //public async Task<IActionResult> Delete(int? id)

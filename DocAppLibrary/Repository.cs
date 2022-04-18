@@ -42,5 +42,12 @@ namespace DocAppLibrary
         {
             _context.SaveChanges();
         }
+
+        public void Update(T entity)
+        {
+            var e = _context.Set<T>();
+            _context.Entry(e).State = EntityState.Modified;
+            _context.SaveChanges();
+        }
     }
 }

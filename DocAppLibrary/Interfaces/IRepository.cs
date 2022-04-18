@@ -15,5 +15,6 @@ namespace DocAppLibrary.Interfaces
         T GetById(int id);
         void Save();
         IQueryable<T> Query();
+        void Update(T entity);
     }
 }
