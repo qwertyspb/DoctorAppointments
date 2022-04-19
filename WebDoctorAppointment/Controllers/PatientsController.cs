@@ -72,33 +72,18 @@ namespace WebDoctorAppointment.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult Edit(int id, PatientViewModel pntmodel)
         {
-            var patient = _mapper.Map<Patient>(pntmodel);
+            if (!ModelState.IsValid)
+                return View(pntmodel);
 
-            if (id != patient.Id)
-            {
+            var repo = _unitOfWork.GetRepository<Patient>();
+            var patient = repo.GetById(pntmodel.Id);
+
+            if (patient== null)
                 return NotFound();
-            }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _unitOfWork.GetRepository<Patient>().Update(patient);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PatientExists(patient.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(pntmodel);
+            patient.Name = pntmodel.Name;
+            repo.Save();
+            return RedirectToAction(nameof(Index));
         }
 
         private bool PatientExists(int id)

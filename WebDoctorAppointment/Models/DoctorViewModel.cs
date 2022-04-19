@@ -13,8 +13,9 @@ namespace WebDoctorAppointment.Models
         [Display(Name = "ФИО")]
         [Required(ErrorMessage = "Поле не может быть пустым")]
         public string Name { get; set; }
+
         [Display(Name = "Кабинет")]
-        [Remote(action: "DoesRoomExist", controller: "Doctors", ErrorMessage = "Кабинет уже занят")]
+        [Remote(action: "DoesRoomExist", controller: "Doctors", AdditionalFields = nameof(Id), ErrorMessage = "Кабинет уже занят")]
         public int Room { get; set; }
     }
 }

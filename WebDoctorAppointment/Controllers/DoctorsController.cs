@@ -34,9 +34,20 @@ namespace WebDoctorAppointment.Controllers
 
         // get: Doctors/Create
         [AcceptVerbs("GET", "POST")]
-        public IActionResult DoesRoomExist(int room)
+        public IActionResult DoesRoomExist(int room, int id)
         {
-            var result =  _unitOfWork.GetRepository<Doctor>().Query().Any(x => x.Room == room);
+            var result = false;
+            var repo = _unitOfWork.GetRepository<Doctor>();
+
+            if (id != 0)
+            {
+                var doctor = repo.GetById(id);
+                result = repo.Query().Any(x => x.Room == room && x.Room != doctor.Room);
+            }
+            else
+            {
+                result = repo.Query().Any(x => x.Room == room);
+            }
             return Json(!result);
         }
         public IActionResult Create()
@@ -78,35 +89,21 @@ namespace WebDoctorAppointment.Controllers
         // POST: Doctors/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(int id, DoctorViewModel docmodel)
+        public IActionResult Edit(DoctorViewModel docmodel)
         {
-            var doctor = _mapper.Map<Doctor>(docmodel);
+            if (!ModelState.IsValid)
+                return View(docmodel);
 
-            if (id != doctor.Id)
-            {
+            var repo = _unitOfWork.GetRepository<Doctor>();
+            var doctor = repo.GetById(docmodel.Id);
+            
+            if (doctor == null)
                 return NotFound();
-            }
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _unitOfWork.GetRepository<Doctor>().Update(doctor);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!DoctorExists(doctor.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(docmodel);
+            doctor.Name = docmodel.Name;
+            doctor.Room = docmodel.Room;
+            repo.Save();
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Doctor/Delete/5
@@ -133,11 +130,6 @@ namespace WebDoctorAppointment.Controllers
         {
             _unitOfWork.GetRepository<Doctor>().Delete(id);
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool DoctorExists(int id)
-        {
-            return _unitOfWork.GetRepository<Doctor>().Query().Any(d => d.Id == id);
         }
     }
 }
