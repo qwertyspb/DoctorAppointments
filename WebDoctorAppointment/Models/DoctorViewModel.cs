@@ -7,7 +7,7 @@ namespace WebDoctorAppointment.Models
     {
         public int Id { get; set; }
 
-        [Display(Name = "ФИО")]
+        [Display(Name = "ФИО врача")]
         [Required(ErrorMessage = "Поле ФИО не может быть пустым")]
         public string Name { get; set; }
 
