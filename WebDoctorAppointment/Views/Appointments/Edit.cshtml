@@ -1,9 +1,9 @@
-﻿@model WebDoctorAppointment.Models.AppointmentViewModel
+﻿@model WebDoctorAppointment.Models.EditAppointmentViewModel
 @{
-    ViewData["Title"] = "Edit";
+    ViewData["Title"] = "Изменение";
 }
 
-<h1>Edit</h1>
+<h1>Изменение</h1>
 
 <h4>Назначение</h4>
 <hr />
@@ -12,25 +12,35 @@
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
-            @*<div class="form-group">
-                <label asp-for="Name" class="control-label"></label>
-                <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+            <div class="form-group">
+                <label asp-for="DoctorId"></label>
+                <select asp-for="DoctorId" asp-items="Model.Doctors" class="custom-select"></select>
+                <span asp-validation-for="DoctorId" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Room" class="control-label"></label>
-                <input asp-for="Room" class="form-control" />
-                <span asp-validation-for="Room" class="text-danger"></span>
-            </div>*@
+                <label asp-for="PatientId"></label>
+                <select asp-for="PatientId" asp-items="Model.Patients" class="custom-select"></select>
+                <span asp-validation-for="PatientId" class="text-danger"></span>
+            </div>
             <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-primary" />
+                <label asp-for="StartTime" class="control-label"></label>
+                <input asp-for="StartTime" class="form-control" />
+                <span asp-validation-for="StartTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EndTime" class="control-label"></label>
+                <input asp-for="EndTime" class="form-control" />
+                <span asp-validation-for="EndTime" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Сохранить" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Index">Возврат к списку назначений</a>
 </div>
 
 @section Scripts {

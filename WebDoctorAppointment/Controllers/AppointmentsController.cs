@@ -5,9 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -23,6 +21,8 @@ namespace WebDoctorAppointment.Controllers
             _mapper = new MapperConfiguration(x =>
             {
                 x.CreateMap<Appointment, AppointmentViewModel>();
+
+                x.CreateMap<Appointment, EditAppointmentViewModel>();
                 x.CreateMap<EditAppointmentViewModel, Appointment>().ForMember(dst => dst.Doctor, opt => opt.Ignore());
                 x.CreateMap<EditAppointmentViewModel, Appointment>().ForMember(dst => dst.Patient, opt => opt.Ignore());
             }).CreateMapper();
@@ -43,7 +43,7 @@ namespace WebDoctorAppointment.Controllers
             //var docsQuery = _unitOfWork.GetRepository<Doctor>().Query();
             //var pntsQuery = _unitOfWork.GetRepository<Patient>().Query();
 
-            var appmodels = _unitOfWork.GetRepository<Appointment>().Query().Select(x => new AppointmentViewModel 
+            var appmodels = _unitOfWork.GetRepository<Appointment>().Query().Select(x => new AppointmentViewModel
             {
                 Id = x.Id,
                 DoctorId = x.DoctorId,
@@ -52,7 +52,14 @@ namespace WebDoctorAppointment.Controllers
                 EndTime = x.EndTime,
                 DoctorName = x.Doctor.Name,
                 PatientName = x.Patient.Name
-            }).ToList();
+            }).OrderBy(x => x.StartTime).ToList();
+
+            //// ничего не дало.
+            //foreach (var m in appmodels)
+            //{
+            //    m.StartTime = DateTime.Parse(m.StartTime.ToString("g"));
+            //    m.EndTime = DateTime.Parse(m.EndTime.ToString("g"));
+            //}
 
             return View(appmodels);
         }
@@ -71,11 +78,11 @@ namespace WebDoctorAppointment.Controllers
                 x.Id,
                 x.Name
             }).OrderBy(x => x.Name).ToList();
-            //Спозиционировать в Edit по Id, чтобы был подставлен конкретный врач/пациент
             model.Patients = new SelectList(pntList, "Id", "Name");
 
             //Убрать милисекунды. Реализовать в контроллере.
-            model.StartTime = DateTime.Now;
+            //Явно, должен быть другой способ.
+            model.StartTime = DateTime.Parse(DateTime.Now.ToString("g"));
             model.EndTime = model.StartTime.AddMinutes(30);
 
             return View(model);
@@ -96,18 +103,95 @@ namespace WebDoctorAppointment.Controllers
 
         public IActionResult Edit(int? id)
         {
+            var repo = _unitOfWork.GetRepository<Appointment>();
+            var app = repo.GetById((int)id);
+            var appmodel = _mapper.Map<EditAppointmentViewModel>(app);
+
+            var docList = _unitOfWork.GetRepository<Doctor>().Query().Select(x => new
+            {
+                x.Id,
+                x.Name
+            }).OrderBy(x => x.Name).ToList();
+            appmodel.Doctors = new SelectList(docList, "Id", "Name");
+
+            var pntList = _unitOfWork.GetRepository<Patient>().Query().Select(x => new
+            {
+                x.Id,
+                x.Name
+            }).OrderBy(x => x.Name).ToList();
+            appmodel.Patients = new SelectList(pntList, "Id", "Name");
+
+            //Явно потом надо будет переделать.
+            appmodel.StartTime = DateTime.Parse(appmodel.StartTime.ToString("g"));
+            appmodel.EndTime = DateTime.Parse(appmodel.EndTime.ToString("g"));
+
             if (id == null)
             {
                 return NotFound();
             }
+            
 
-            var app = _unitOfWork.GetRepository<Appointment>().GetById((int)id);
-            var appmodel = _mapper.Map<AppointmentViewModel>(app);
             if (appmodel == null)
             {
                 return NotFound();
             }
             return View(appmodel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Edit(EditAppointmentViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            var appRepo = _unitOfWork.GetRepository<Appointment>();
+            var app = appRepo.GetById(model.Id);
+
+            appRepo.Query().Include(x => x.Doctor).Include(x => x.Patient).ToList();
+
+            var doc = _unitOfWork.GetRepository<Doctor>().GetById(model.DoctorId);
+            var pnt = _unitOfWork.GetRepository<Patient>().GetById(model.PatientId);
+
+            if (app == null)
+                return NotFound();
+
+            app.Doctor = doc;
+            app.Patient = pnt;
+            app.StartTime = model.StartTime;
+            app.EndTime = model.EndTime;
+
+            appRepo.Save();
+            return RedirectToAction(nameof(Index));
+        }
+        public IActionResult Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var repo = _unitOfWork.GetRepository<Appointment>();
+            var app = repo.GetById((int)id);
+            var model = _mapper.Map<AppointmentViewModel>(app);
+
+            repo.Query().Include(x => x.Doctor).Include(x => x.Patient).ToList();
+            model.DoctorName = app.Doctor.Name;
+            model.PatientName = app.Patient.Name;
+
+            if (model == null)
+            {
+                return NotFound();
+            }
+            return View(model);
+        }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
+        {
+            _unitOfWork.GetRepository<Appointment>().Delete(id);
+            return RedirectToAction(nameof(Index));
         }
     }
 }

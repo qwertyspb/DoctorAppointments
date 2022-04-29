@@ -1,12 +1,12 @@
 ﻿@model WebDoctorAppointment.Models.DoctorViewModel
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Добавление врача";
 }
 
-<h1>Create</h1>
+<h1>Добавление врача</h1>
 
-<h4>Doctor</h4>
+<h4>Врач</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
@@ -23,14 +23,14 @@
                 <span asp-validation-for="Room" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
+                <input type="submit" value="Добавить" class="btn btn-primary" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Index">Назад к списку врачей</a>
 </div>
 
 @section Scripts {
