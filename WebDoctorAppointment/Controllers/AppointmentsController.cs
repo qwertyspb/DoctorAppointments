@@ -99,6 +99,12 @@ namespace WebDoctorAppointment.Controllers
             return View(model);
         }
 
+        // ВР: если хочешь использовать именно AppointmentRepository и его метод CheckIntersection,
+        // то в конструктор контроллера нужно передать DocVisitContext и использовать его (по аналогии с _unitOfWork)
+        // попробуй сделать этот вариант;
+        // НО потом лучше остаться в концепции UnitOfWork.GetRepository(), т.е. не передавать DocVisitContext в явном виде в конструктор
+        // как вариант - сделай метод CheckIntersection() как метод расширения для IRepository<Appointment> (по аналогии с методом расширения RoundUp для DateTime)
+
         //[AcceptVerbs("GET", "POST")]
         //public IActionResult IsNotIntersected(EditAppointmentViewModel appmodel)
         //{
