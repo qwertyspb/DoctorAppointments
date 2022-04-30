@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DocAppLibrary;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,7 @@ namespace WebDoctorAppointment.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        //private readonly DocVisitContext _context = new DocVisitContext();
 
         public AppointmentsController(IUnitOfWork unitOfWork)
         {
@@ -87,6 +89,15 @@ namespace WebDoctorAppointment.Controllers
 
             return View(model);
         }
+
+        //[AcceptVerbs("GET", "POST")]
+        //public IActionResult IsNotIntersected(EditAppointmentViewModel appmodel)
+        //{
+        //    var appRepo = new AppointmentRepository(_context);
+        //    var app = _mapper.Map<Appointment>(appmodel);
+        //    var result = appRepo.CheckIntersection(app.Id, app.StartTime, app.EndTime);
+        //    return Json(!result);
+        //}
 
         [HttpPost]
         [ValidateAntiForgeryToken]
