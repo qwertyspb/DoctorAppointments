@@ -54,6 +54,14 @@ namespace WebDoctorAppointment.Controllers
                 PatientName = x.Patient.Name
             }).OrderBy(x => x.StartTime).ToList();
 
+            // ВР: при отображении списка назначений округлять время не понадобится,
+            // если сохранять даты уже округленные при создании и изменении;
+            // набери в гугле "c# округлить время до секунд", получишь массу вариантов
+            // добавил метод расширения RoundUp для типа DateTime, где первый параметр - это дата, которую хотим округлить,
+            // второй параметр - до какой величины мы хотим округлить дату
+            // возвращает округленную дату
+            // варианты использования, см юнит тесты
+
             //// ничего не дало.
             //foreach (var m in appmodels)
             //{
@@ -63,6 +71,7 @@ namespace WebDoctorAppointment.Controllers
 
             return View(appmodels);
         }
+
         public IActionResult Create()
         {
             var model = new EditAppointmentViewModel();
@@ -101,6 +110,8 @@ namespace WebDoctorAppointment.Controllers
             return View(appmodel);
         }
 
+        // ВР: зачем передавать тип int?, если всё равно потом приводишь к типу int
+        // если ничего не передадут, то в int придет значение по умолчанию, т.е. 0
         public IActionResult Edit(int? id)
         {
             var repo = _unitOfWork.GetRepository<Appointment>();
@@ -125,6 +136,7 @@ namespace WebDoctorAppointment.Controllers
             appmodel.StartTime = DateTime.Parse(appmodel.StartTime.ToString("g"));
             appmodel.EndTime = DateTime.Parse(appmodel.EndTime.ToString("g"));
 
+            // ВР: эти две проверки работать не будут, разберись почему и поправь
             if (id == null)
             {
                 return NotFound();
@@ -148,11 +160,15 @@ namespace WebDoctorAppointment.Controllers
             var appRepo = _unitOfWork.GetRepository<Appointment>();
             var app = appRepo.GetById(model.Id);
 
+            // ВР: не понял зачем эта строка
             appRepo.Query().Include(x => x.Doctor).Include(x => x.Patient).ToList();
 
+            // ВР: нет необходимости дополнительно вытаскивать доктора и пациента, т.к. у тебя уже есть в model их идертификаторы
+            // просто app.DoctorId = model.DoctorId, или еще проще через _mapper.Map()
             var doc = _unitOfWork.GetRepository<Doctor>().GetById(model.DoctorId);
             var pnt = _unitOfWork.GetRepository<Patient>().GetById(model.PatientId);
 
+            // ВР: эту проверку лучше делать сразу после получения app
             if (app == null)
                 return NotFound();
 
@@ -175,10 +191,18 @@ namespace WebDoctorAppointment.Controllers
             var app = repo.GetById((int)id);
             var model = _mapper.Map<AppointmentViewModel>(app);
 
+            // ВР: не понял зачем эта строка, судя по тому, что она уже второй раз появляется, похоже есть проблема
+            // ааа, понял, ты таким образом доктора и пациента получаешь в app модели?!
+            // так не делается, потому что:
+            // 1. это не явно происходит (не каждый программист тебе сходу скажет, что так можно доктора и пациента подставить в модель)
+            // 2. если у тебя миллион пациентов (что реально), то придется вытаскивать весь миллион на клиента, это будет очень долго и ресурсоемко
+            // решение: назначение нужно получать типа appRepo.Query().Where(по id).Select(указывай, какие поля нужно вытащить) - по аналогии с методом Index()
             repo.Query().Include(x => x.Doctor).Include(x => x.Patient).ToList();
             model.DoctorName = app.Doctor.Name;
             model.PatientName = app.Patient.Name;
 
+            // ВР: проверка работать не будет, ибо в случае model == null выполнение упадет раньше
+            // но варианта, что model == null не будет, т.к. _mapper.Map() обязательно создаст объект либо упадет с ошибкой
             if (model == null)
             {
                 return NotFound();
