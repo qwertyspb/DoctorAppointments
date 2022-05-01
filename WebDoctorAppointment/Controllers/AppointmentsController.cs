@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using WebDoctorAppointment.Extensions;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -15,7 +16,6 @@ namespace WebDoctorAppointment.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        //private readonly DocVisitContext _context = new DocVisitContext();
 
         public AppointmentsController(IUnitOfWork unitOfWork)
         {
@@ -64,16 +64,30 @@ namespace WebDoctorAppointment.Controllers
             // возвращает округленную дату
             // варианты использования, см юнит тесты
 
-            //// ничего не дало.
             //foreach (var m in appmodels)
             //{
-            //    m.StartTime = DateTime.Parse(m.StartTime.ToString("g"));
-            //    m.EndTime = DateTime.Parse(m.EndTime.ToString("g"));
+            //    m.StartTime = m.StartTime.RoundUp(TimeSpan.FromMinutes(1));
+            //    m.EndTime = m.EndTime.RoundUp(TimeSpan.FromMinutes(1));
             //}
 
             return View(appmodels);
         }
 
+        public IActionResult IndexFull()
+        {
+            var appmodels = _unitOfWork.GetRepository<Appointment>().Query().Select(x => new AppointmentViewModel
+            {
+                Id = x.Id,
+                DoctorId = x.DoctorId,
+                PatientId = x.PatientId,
+                StartTime = x.StartTime,
+                EndTime = x.EndTime,
+                DoctorName = x.Doctor.Name,
+                PatientName = x.Patient.Name
+            }).OrderBy(x => x.StartTime).ToList();
+
+            return View(appmodels);
+        }
         public IActionResult Create()
         {
             var model = new EditAppointmentViewModel();
@@ -91,28 +105,31 @@ namespace WebDoctorAppointment.Controllers
             }).OrderBy(x => x.Name).ToList();
             model.Patients = new SelectList(pntList, "Id", "Name");
 
-            //Убрать милисекунды. Реализовать в контроллере.
-            //Явно, должен быть другой способ.
-            model.StartTime = DateTime.Parse(DateTime.Now.ToString("g"));
-            model.EndTime = model.StartTime.AddMinutes(30);
+            model.StartTime = DateTime.Now.RoundUp(TimeSpan.FromMinutes(30));
+            model.EndTime = model.StartTime.AddMinutes(30).RoundUp(TimeSpan.FromMinutes(30));
 
             return View(model);
         }
 
-        // ВР: если хочешь использовать именно AppointmentRepository и его метод CheckIntersection,
-        // то в конструктор контроллера нужно передать DocVisitContext и использовать его (по аналогии с _unitOfWork)
-        // попробуй сделать этот вариант;
         // НО потом лучше остаться в концепции UnitOfWork.GetRepository(), т.е. не передавать DocVisitContext в явном виде в конструктор
         // как вариант - сделай метод CheckIntersection() как метод расширения для IRepository<Appointment> (по аналогии с методом расширения RoundUp для DateTime)
 
         //[AcceptVerbs("GET", "POST")]
-        //public IActionResult IsNotIntersected(EditAppointmentViewModel appmodel)
+        //public IActionResult IsNotIntersected(EditAppointmentViewModel model)
         //{
-        //    var appRepo = new AppointmentRepository(_context);
-        //    var app = _mapper.Map<Appointment>(appmodel);
-        //    var result = appRepo.CheckIntersection(app.Id, app.StartTime, app.EndTime);
+        //    var app = _mapper.Map<Appointment>(model);
+        //    var result = _unitOfWork.CheckIntersection(app.Id, app.StartTime, app.EndTime);
         //    return Json(!result);
         //}
+
+        [AcceptVerbs("GET", "POST")]
+        public IActionResult IsNotIntersected(EditAppointmentViewModel model)
+        {
+            var app = _mapper.Map<Appointment>(model);
+            var query = _unitOfWork.GetRepository<Appointment>().Query().Where(x => x.DoctorId == model.DoctorId || x.PatientId == model.PatientId);
+            var result = _unitOfWork.CheckIntersection(query, app.Id, app.StartTime, app.EndTime);
+            return Json(!result);
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -129,10 +146,15 @@ namespace WebDoctorAppointment.Controllers
 
         // ВР: зачем передавать тип int?, если всё равно потом приводишь к типу int
         // если ничего не передадут, то в int придет значение по умолчанию, т.е. 0
-        public IActionResult Edit(int? id)
+        public IActionResult Edit(int id)
         {
+            if (id == 0)
+            {
+                return NotFound();
+            }
+
             var repo = _unitOfWork.GetRepository<Appointment>();
-            var app = repo.GetById((int)id);
+            var app = repo.GetById(id);
             var appmodel = _mapper.Map<EditAppointmentViewModel>(app);
 
             var docList = _unitOfWork.GetRepository<Doctor>().Query().Select(x => new
@@ -149,16 +171,10 @@ namespace WebDoctorAppointment.Controllers
             }).OrderBy(x => x.Name).ToList();
             appmodel.Patients = new SelectList(pntList, "Id", "Name");
 
-            //Явно потом надо будет переделать.
-            appmodel.StartTime = DateTime.Parse(appmodel.StartTime.ToString("g"));
-            appmodel.EndTime = DateTime.Parse(appmodel.EndTime.ToString("g"));
+            appmodel.StartTime.RoundUp(TimeSpan.FromMinutes(30));
+            appmodel.EndTime.RoundUp(TimeSpan.FromMinutes(30));
 
             // ВР: эти две проверки работать не будут, разберись почему и поправь
-            if (id == null)
-            {
-                return NotFound();
-            }
-            
 
             if (appmodel == null)
             {
@@ -174,39 +190,25 @@ namespace WebDoctorAppointment.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var appRepo = _unitOfWork.GetRepository<Appointment>();
-            var app = appRepo.GetById(model.Id);
-
-            // ВР: не понял зачем эта строка
-            appRepo.Query().Include(x => x.Doctor).Include(x => x.Patient).ToList();
-
-            // ВР: нет необходимости дополнительно вытаскивать доктора и пациента, т.к. у тебя уже есть в model их идертификаторы
-            // просто app.DoctorId = model.DoctorId, или еще проще через _mapper.Map()
-            var doc = _unitOfWork.GetRepository<Doctor>().GetById(model.DoctorId);
-            var pnt = _unitOfWork.GetRepository<Patient>().GetById(model.PatientId);
-
-            // ВР: эту проверку лучше делать сразу после получения app
-            if (app == null)
-                return NotFound();
-
-            app.Doctor = doc;
-            app.Patient = pnt;
+            var app = _unitOfWork.GetRepository<Appointment>().GetById(model.Id);
+            app.PatientId = model.PatientId;
+            app.DoctorId = model.DoctorId;
             app.StartTime = model.StartTime;
             app.EndTime = model.EndTime;
 
-            appRepo.Save();
+            if (app == null)
+                return NotFound();
+
+            _unitOfWork.GetRepository<Appointment>().Save();
             return RedirectToAction(nameof(Index));
         }
-        public IActionResult Delete(int? id)
+        public IActionResult Delete(int id)
         {
-            if (id == null)
+            if (id == 0)
             {
                 return NotFound();
             }
 
-            var repo = _unitOfWork.GetRepository<Appointment>();
-            var app = repo.GetById((int)id);
-            var model = _mapper.Map<AppointmentViewModel>(app);
 
             // ВР: не понял зачем эта строка, судя по тому, что она уже второй раз появляется, похоже есть проблема
             // ааа, понял, ты таким образом доктора и пациента получаешь в app модели?!
@@ -214,17 +216,25 @@ namespace WebDoctorAppointment.Controllers
             // 1. это не явно происходит (не каждый программист тебе сходу скажет, что так можно доктора и пациента подставить в модель)
             // 2. если у тебя миллион пациентов (что реально), то придется вытаскивать весь миллион на клиента, это будет очень долго и ресурсоемко
             // решение: назначение нужно получать типа appRepo.Query().Where(по id).Select(указывай, какие поля нужно вытащить) - по аналогии с методом Index()
-            repo.Query().Include(x => x.Doctor).Include(x => x.Patient).ToList();
-            model.DoctorName = app.Doctor.Name;
-            model.PatientName = app.Patient.Name;
+
+            var models = _unitOfWork.GetRepository<Appointment>().Query().Where(x => x.Id == id).Select(x => new AppointmentViewModel
+            {
+                Id = x.Id,
+                DoctorId = x.DoctorId,
+                PatientId = x.PatientId,
+                StartTime = x.StartTime,
+                EndTime = x.EndTime,
+                DoctorName = x.Doctor.Name,
+                PatientName = x.Patient.Name
+            }).ToList();
 
             // ВР: проверка работать не будет, ибо в случае model == null выполнение упадет раньше
             // но варианта, что model == null не будет, т.к. _mapper.Map() обязательно создаст объект либо упадет с ошибкой
-            if (model == null)
+            if (models == null)
             {
                 return NotFound();
             }
-            return View(model);
+            return View(models.First());
         }
 
         [HttpPost, ActionName("Delete")]

@@ -35,6 +35,8 @@ namespace UnitTests
         [TestCase("30.04.2022 16:29:01.123456", "30.04.2022 16:30", 10)]
         [TestCase("30.04.2022 16:39:44.123456", "30.04.2022 16:40:00", 0.5)]
         [TestCase("30.04.2022 16:39:01.123456", "30.04.2022 16:39:30", 0.5)]
+        [TestCase("30.04.2022 16:39:02.123456", "30.04.2022 17:00", 30)]
+        [TestCase("30.04.2022 16:19:03.123456", "30.04.2022 16:30", 30)]
         public void DateTime_RoundUp_Ok(string original, string expected, double minutes)
         {
             // Arrange

@@ -2,13 +2,16 @@
 
 @{
     ViewData["Title"] = "Назначения";
+    var dateFrom = DateTime.Today.ToShortDateString();
+    var dateTill = DateTime.Today.AddDays(7).ToShortDateString();
 }
 
-<h1>Текущие назначения</h1>
+<h3>Текущие назначения с @dateFrom по @dateTill </h3>
 
 <p>
     <a asp-action="Create">Добавить назначение</a>
 </p>
+
 <table class="table">
     <thead>
         <tr>
@@ -54,3 +57,6 @@
             }
     </tbody>
 </table>
+<p>
+    <a asp-action="IndexFull">Показать все назначения</a>
+</p>

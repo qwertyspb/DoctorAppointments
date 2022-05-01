@@ -13,7 +13,7 @@ namespace WebDoctorAppointment.Models
         //[Remote(action: "IsNotIntersected", controller: "Appointments", /*AdditionalFields = nameof(Id), */ErrorMessage = "Это время уже занято")]
         public DateTime StartTime { get; set; }
         [Display(Name = "Время окончания")]
-        //[Remote(action: "IsNotIntersected", controller: "Appointments", /*AdditionalFields = nameof(Id), */ErrorMessage = "Это время уже занято")]
+        [Remote(action: "IsNotIntersected", controller: "Appointments", AdditionalFields = "Id, StartTime, DoctorId, PatientId", ErrorMessage = "Это время уже занято")]
         public DateTime EndTime { get; set; }
         [Display(Name = "ФИО врача")]
         public int DoctorId { get; set; }
