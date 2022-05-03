@@ -1,62 +1,59 @@
 ﻿@model IEnumerable<WebDoctorAppointment.Models.AppointmentViewModel>
 
 @{
-    ViewData["Title"] = "Назначения";
-    var dateFrom = DateTime.Today.ToShortDateString();
-    var dateTill = DateTime.Today.AddDays(7).ToShortDateString();
+	ViewData["Title"] = "Назначения";
+	var dateFrom = (DateTime)ViewData["DateFrom"];
+	var dateTill = (DateTime)ViewData["DateTill"];
 }
 
-<h3>Текущие назначения с @dateFrom по @dateTill </h3>
+<h3>Назначения с @dateFrom.ToShortDateString() по @dateTill.ToShortDateString() </h3>
 
 <p>
-    <a asp-action="Create">Добавить назначение</a>
+	<a asp-action="Create">Добавить назначение</a>
 </p>
 
 <table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.DoctorName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PatientName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.StartTime)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.EndTime)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            @if ((item.StartTime >= DateTime.Today) && (item.StartTime <= DateTime.Today.AddDays(7)))
-            {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.DoctorName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PatientName)
-            </td>
-            <td>
-                @Html.DisplayFor(model => item.StartTime)
-            </td>
-            <td>
-                @Html.DisplayFor(model => item.EndTime)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Изменить</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Удалить</a>
-            </td>
-        </tr>
-                }
-            }
-    </tbody>
+	<thead>
+		<tr>
+			<th>
+				@Html.DisplayNameFor(model => model.DoctorName)
+			</th>
+			<th>
+				@Html.DisplayNameFor(model => model.PatientName)
+			</th>
+			<th>
+				@Html.DisplayNameFor(model => model.StartTime)
+			</th>
+			<th>
+				@Html.DisplayNameFor(model => model.EndTime)
+			</th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var item in Model)
+		{
+			<tr>
+				<td>
+					@Html.DisplayFor(modelItem => item.DoctorName)
+				</td>
+				<td>
+					@Html.DisplayFor(modelItem => item.PatientName)
+				</td>
+				<td>
+					@Html.DisplayFor(model => item.StartTime)
+				</td>
+				<td>
+					@Html.DisplayFor(model => item.EndTime)
+				</td>
+				<td>
+					<a asp-action="Edit" asp-route-id="@item.Id">Изменить</a> |
+					<a asp-action="Delete" asp-route-id="@item.Id">Удалить</a>
+				</td>
+			</tr>
+		}
+	</tbody>
 </table>
 <p>
-    <a asp-action="IndexFull">Показать все назначения</a>
+	<a asp-action="IndexFull">Показать все назначения</a>
 </p>
