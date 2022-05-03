@@ -4,6 +4,8 @@ using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -24,27 +26,27 @@ namespace WebDoctorAppointment.Controllers
         }
 
         // GET: Doctors
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var doctors = _unitOfWork.GetRepository<Doctor>().Query().ToList();
+            var doctors = await _unitOfWork.GetRepository<Doctor>().Query().ToListAsync();
             var docmodels = _mapper.Map<List<DoctorViewModel>>(doctors);
             return View(docmodels);
         }
 
         [AcceptVerbs("GET", "POST")]
-        public IActionResult DoesRoomExist(int room, int id)
+        public async Task<IActionResult> DoesRoomExist(int room, int id)
         {
             var result = false;
             var repo = _unitOfWork.GetRepository<Doctor>();
 
             if (id != 0)
             {
-                var doctor = repo.GetById(id);
-                result = repo.Query().Any(x => x.Room == room && x.Room != doctor.Room);
+                var doctor = await repo.GetById(id);
+                result = await repo.Query().AnyAsync(x => x.Room == room && x.Room != doctor.Room);
             }
             else
             {
-                result = repo.Query().Any(x => x.Room == room);
+                result = await repo.Query().AnyAsync(x => x.Room == room);
             }
             return Json(!result);
         }
@@ -56,77 +58,66 @@ namespace WebDoctorAppointment.Controllers
         // POST: Doctors/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(DoctorViewModel docmodel)
+        public async Task<IActionResult> Create(DoctorViewModel docmodel)
         {
             if (ModelState.IsValid)
             {
                 var doctor = _mapper.Map<Doctor>(docmodel);
-                _unitOfWork.GetRepository<Doctor>().Create(doctor);
+                await _unitOfWork.GetRepository<Doctor>().Create(doctor);
                 return RedirectToAction(nameof(Index));
             }
             return View(docmodel);
         }
 
         // GET: Doctors/Edit/5
-        public IActionResult Edit(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
-            {
+            var doctor = await _unitOfWork.GetRepository<Doctor>().GetById(id);
+            if (doctor == null)
                 return NotFound();
-            }
-
-            var doctor = _unitOfWork.GetRepository<Doctor>().GetById((int)id);
+            
             var docmodel = _mapper.Map<DoctorViewModel>(doctor);
-            if (docmodel == null)
-            {
-                return NotFound();
-            }
             return View(docmodel);
         }
 
         // POST: Doctors/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(DoctorViewModel docmodel)
+        public async Task<IActionResult> Edit(DoctorViewModel docmodel)
         {
             if (!ModelState.IsValid)
                 return View(docmodel);
 
             var repo = _unitOfWork.GetRepository<Doctor>();
-            var doctor = repo.GetById(docmodel.Id);
+            var doctor = await repo.GetById(docmodel.Id);
             
             if (doctor == null)
                 return NotFound();
 
             doctor.Name = docmodel.Name;
             doctor.Room = docmodel.Room;
-            repo.Save();
+            await repo.Save();
+
             return RedirectToAction(nameof(Index));
         }
 
         // GET: Doctor/Delete/5
-        public IActionResult Delete(int? id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (id == null)
-            {
+            var doctor = await _unitOfWork.GetRepository<Doctor>().GetById((int)id);
+            if (doctor == null)
                 return NotFound();
-            }
 
-            var doctor = _unitOfWork.GetRepository<Doctor>().GetById((int)id);
             var docmodel = _mapper.Map<DoctorViewModel>(doctor);
-            if (docmodel == null)
-            {
-                return NotFound();
-            }
             return View(docmodel);
         }
 
         // POST: Doctors/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            _unitOfWork.GetRepository<Doctor>().Delete(id);
+            await _unitOfWork.GetRepository<Doctor>().Delete(id);
             return RedirectToAction(nameof(Index));
         }
     }

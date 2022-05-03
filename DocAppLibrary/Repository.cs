@@ -3,34 +3,37 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace DocAppLibrary
 {
     public class Repository<T> : IRepository<T> where T : class, IId
     {
         private readonly DbContext _context;
+
         public Repository(DbContext context) => _context = context;
-        public void Create(T entity)
+
+        public async Task Create(T entity)
         {
-            _context.Set<T>().Add(entity);
-            _context.SaveChanges();
+            await _context.Set<T>().AddAsync(entity);
+            await _context.SaveChangesAsync();
         }
 
-        public void Delete(int id)
+        public Task Delete(int id)
         {
-            Delete(t => t.Id == id);
+            return Delete(t => t.Id == id);
         }
 
-        public void Delete(Expression<Func<T, bool>> condition)
+        public async Task Delete(Expression<Func<T, bool>> condition)
         {
-            var del = _context.Set<T>().Where(condition).ToList();
+            var del = await _context.Set<T>().Where(condition).ToListAsync();
             _context.RemoveRange(del);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public T GetById(int id)
+        public ValueTask<T> GetById(int id)
         {
-            return _context.Set<T>().Find(id);
+            return _context.Set<T>().FindAsync(id);
         }
 
         public IQueryable<T> Query()
@@ -38,9 +41,9 @@ namespace DocAppLibrary
             return _context.Set<T>().AsQueryable();
         }
 
-        public void Save()
+        public Task Save()
         {
-            _context.SaveChanges();
+            return _context.SaveChangesAsync();
         }
     }
 }

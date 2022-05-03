@@ -5,12 +5,15 @@ namespace DocAppLibrary
 {
     public class UnitOfWork<TContext> : IUnitOfWork where TContext : DbContext
     {
-        private TContext _context;
+        private readonly TContext _context;
+
         public UnitOfWork(TContext context)
         {
             _context = context;
         }
+
         public TContext Context => _context;
+
         public void Dispose()
         {
             _context.Dispose();
