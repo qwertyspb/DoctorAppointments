@@ -84,7 +84,11 @@ namespace WebDoctorAppointment.Controllers
         public IActionResult Create(EditAppointmentViewModel appmodel)
         {
             if (!ModelState.IsValid)
+            {
+                appmodel.Doctors = DoctorSelectList();
+                appmodel.Patients = PatientSelectList();
                 return View(appmodel);
+            }
 
             var repo = _unitOfWork.GetRepository<Appointment>();
             if (repo.CheckIntersection(appmodel.Id, appmodel.StartTime, appmodel.EndTime, appmodel.DoctorId,
@@ -121,7 +125,11 @@ namespace WebDoctorAppointment.Controllers
         public IActionResult Edit(EditAppointmentViewModel model)
         {
             if (!ModelState.IsValid)
+            {
+                model.Doctors = DoctorSelectList();
+                model.Patients = PatientSelectList();
                 return View(model);
+            }
 
             var repo = _unitOfWork.GetRepository<Appointment>();
             if (repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId, model.PatientId))
