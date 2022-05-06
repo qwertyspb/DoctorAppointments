@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Extensions;
 using WebDoctorAppointment.Models;
+using System.Threading.Tasks;
 
 namespace WebDoctorAppointment.Controllers
 {
@@ -30,17 +31,17 @@ namespace WebDoctorAppointment.Controllers
             }).CreateMapper();
         }
         
-        public IActionResult Index(DateTime? dateFrom)
+        public async Task<IActionResult> Index(DateTime? dateFrom)
         {
             var leftDate = dateFrom ?? DateTime.Today;
             var rightDate = leftDate.AddDays(7);
 
-            var apps = _unitOfWork.GetRepository<Appointment>().Query()
+            var apps = await _unitOfWork.GetRepository<Appointment>().Query()
                 .Include(x => x.Doctor)
                 .Include(x => x.Patient)
                 .Where(x => x.StartTime >= leftDate && x.StartTime < rightDate)
                 .OrderBy(x => x.StartTime)
-                .ToList();
+                .ToListAsync();
 
             var appmodels = _mapper.Map<List<AppointmentViewModel>>(apps);
 
@@ -50,13 +51,13 @@ namespace WebDoctorAppointment.Controllers
             return View(appmodels);
         }
 
-        public IActionResult IndexFull()
+        public async Task<IActionResult> IndexFull()
         {
-            var apps = _unitOfWork.GetRepository<Appointment>().Query()
+            var apps = await _unitOfWork.GetRepository<Appointment>().Query()
                 .Include(x => x.Doctor)
                 .Include(x => x.Patient)
                 .OrderBy(x => x.StartTime)
-                .ToList();
+                .ToListAsync();
 
             var appmodels = _mapper.Map<List<AppointmentViewModel>>(apps);
 
@@ -81,7 +82,7 @@ namespace WebDoctorAppointment.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(EditAppointmentViewModel appmodel)
+        public async Task<IActionResult> Create(EditAppointmentViewModel appmodel)
         {
             if (!ModelState.IsValid)
             {
@@ -101,15 +102,15 @@ namespace WebDoctorAppointment.Controllers
             }
 
             var app = _mapper.Map<Appointment>(appmodel);
-            repo.Create(app);
+            await repo.Create(app);
 
             return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
             var repo = _unitOfWork.GetRepository<Appointment>();
-            var app = repo.GetById(id);
+            var app = await repo.GetById(id);
             if (app == null)
                 return NotFound();
 
@@ -122,7 +123,7 @@ namespace WebDoctorAppointment.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(EditAppointmentViewModel model)
+        public async Task<IActionResult> Edit(EditAppointmentViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -140,7 +141,7 @@ namespace WebDoctorAppointment.Controllers
                 return View(model);
             }
 
-            var app = repo.GetById(model.Id);
+            var app = await repo.GetById(model.Id);
             if (app == null)
                 return NotFound();
 
@@ -149,16 +150,16 @@ namespace WebDoctorAppointment.Controllers
             app.StartTime = model.StartTime.RoundUp(TimeSpan.FromMinutes(1));
             app.EndTime = model.EndTime.RoundUp(TimeSpan.FromMinutes(1));
 
-            repo.Save();
+            await repo.Save();
             return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var app = _unitOfWork.GetRepository<Appointment>().Query()
+            var app = await _unitOfWork.GetRepository<Appointment>().Query()
                 .Include(x => x.Doctor)
                 .Include(x => x.Patient)
-                .FirstOrDefault(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (app == null)
                 return NotFound();
@@ -170,9 +171,9 @@ namespace WebDoctorAppointment.Controllers
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            _unitOfWork.GetRepository<Appointment>().Delete(id);
+            await _unitOfWork.GetRepository<Appointment>().Delete(id);
             return RedirectToAction(nameof(Index));
         }
 
