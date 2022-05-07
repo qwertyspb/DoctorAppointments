@@ -1,7 +1,9 @@
 using DocAppLibrary;
+using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,15 @@ namespace WebDoctorAppointment
         {
             services.AddControllersWithViews();
             services.AddDbContext<DocVisitContext>(opt => opt.UseSqlite(Configuration.GetConnectionString("DbConnection")));
+            services.AddIdentity<User, IdentityRole>(opt =>
+                {
+                    opt.Password.RequiredLength = 6;
+                    opt.Password.RequireNonAlphanumeric = false;
+                    opt.Password.RequireDigit = false;
+                    opt.Password.RequireLowercase = false;
+                    opt.Password.RequireUppercase = false;
+                })
+                .AddEntityFrameworkStores<DocVisitContext>();
             services.AddScoped<IUnitOfWork, UnitOfWork<DocVisitContext>>();
         }
 
@@ -44,6 +55,7 @@ namespace WebDoctorAppointment
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

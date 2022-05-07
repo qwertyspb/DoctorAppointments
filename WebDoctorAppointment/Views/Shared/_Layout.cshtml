@@ -27,6 +27,27 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Конфиденциальность</a>
                         </li>
+	                    @if(User.Identity.IsAuthenticated)
+	                    {
+		                    <li class="nav-item">
+								<p class="nav-link text-dark font-weight-bold">@User.Identity.Name</p>
+		                    </li>
+
+							<li class="nav-item">
+		                    <form method="post" asp-controller="User" asp-action="Logout">
+			                    <input type="submit" class="btn btn-dark" value="Выход" />
+		                    </form>
+							</li>
+	                    }
+	                    else
+	                    {
+		                    <li class="nav-item">
+			                    <a class="nav-link text-dark" asp-controller="User" asp-action="Login">Вход</a>
+			                </li>
+		                    <li class="nav-item">
+			                    <a class="nav-link text-dark" asp-controller="User" asp-action="RegisterPatient">Регистрация</a>
+                            </li>
+	                    }
                     </ul>
                 </div>
             </div>
