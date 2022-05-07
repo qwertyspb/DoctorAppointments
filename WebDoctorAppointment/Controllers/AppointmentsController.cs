@@ -30,7 +30,7 @@ namespace WebDoctorAppointment.Controllers
                     .ForMember(dst => dst.Patient, opt => opt.Ignore());
             }).CreateMapper();
         }
-        
+
         public async Task<IActionResult> Index(DateTime? dateFrom)
         {
             var leftDate = dateFrom ?? DateTime.Today;
@@ -64,15 +64,15 @@ namespace WebDoctorAppointment.Controllers
             return View(appmodels);
         }
 
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             var startTime = DateTime.Now.RoundUp(TimeSpan.FromMinutes(1));
             var endTime = startTime.AddMinutes(30).RoundUp(TimeSpan.FromMinutes(1));
 
             var model = new EditAppointmentViewModel
             {
-                Doctors = DoctorSelectList(),
-                Patients = PatientSelectList(),
+                Doctors = await DoctorSelectList(),
+                Patients = await PatientSelectList(),
                 StartTime = startTime,
                 EndTime = endTime
             };
@@ -86,18 +86,18 @@ namespace WebDoctorAppointment.Controllers
         {
             if (!ModelState.IsValid)
             {
-                appmodel.Doctors = DoctorSelectList();
-                appmodel.Patients = PatientSelectList();
+                appmodel.Doctors = await DoctorSelectList();
+                appmodel.Patients = await PatientSelectList();
                 return View(appmodel);
             }
 
             var repo = _unitOfWork.GetRepository<Appointment>();
-            if (repo.CheckIntersection(appmodel.Id, appmodel.StartTime, appmodel.EndTime, appmodel.DoctorId,
+            if (await repo.CheckIntersection(appmodel.Id, appmodel.StartTime, appmodel.EndTime, appmodel.DoctorId,
                     appmodel.PatientId))
             {
                 TempData["Alert"] = "Указанное время занято у выбранного доктора или пациента";
-                appmodel.Doctors = DoctorSelectList();
-                appmodel.Patients = PatientSelectList();
+                appmodel.Doctors = await DoctorSelectList();
+                appmodel.Patients = await PatientSelectList();
                 return View(appmodel);
             }
 
@@ -115,8 +115,8 @@ namespace WebDoctorAppointment.Controllers
                 return NotFound();
 
             var appmodel = _mapper.Map<EditAppointmentViewModel>(app);
-            appmodel.Doctors = DoctorSelectList();
-            appmodel.Patients = PatientSelectList();
+            appmodel.Doctors = await DoctorSelectList();
+            appmodel.Patients = await PatientSelectList();
 
             return View(appmodel);
         }
@@ -127,17 +127,17 @@ namespace WebDoctorAppointment.Controllers
         {
             if (!ModelState.IsValid)
             {
-                model.Doctors = DoctorSelectList();
-                model.Patients = PatientSelectList();
+                model.Doctors = await DoctorSelectList();
+                model.Patients = await PatientSelectList();
                 return View(model);
             }
 
             var repo = _unitOfWork.GetRepository<Appointment>();
-            if (repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId, model.PatientId))
+            if (await repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId, model.PatientId))
             {
                 TempData["Alert"] = "Указанное время занято у выбранного доктора или пациента";
-                model.Doctors = DoctorSelectList();
-                model.Patients = PatientSelectList();
+                model.Doctors = await DoctorSelectList();
+                model.Patients = await PatientSelectList();
                 return View(model);
             }
 
@@ -178,31 +178,37 @@ namespace WebDoctorAppointment.Controllers
         }
 
         [AcceptVerbs("GET", "POST")]
-        public IActionResult IsNotIntersected(EditAppointmentViewModel model)
+        public async Task<IActionResult> IsNotIntersected(EditAppointmentViewModel model)
         {
             var repo = _unitOfWork.GetRepository<Appointment>();
-            var result = repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId,
+            var result = await repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId,
                 model.PatientId);
             return Json(!result);
         }
 
-        private SelectList DoctorSelectList()
+        private async Task<SelectList> DoctorSelectList()
         {
-            var docList = _unitOfWork.GetRepository<Doctor>().Query().Select(x => new
-            {
-                x.Id,
-                x.Name
-            }).OrderBy(x => x.Name).ToList();
+            var docList = await _unitOfWork.GetRepository<Doctor>().Query()
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name
+                })
+                .OrderBy(x => x.Name)
+                .ToListAsync();
             return new SelectList(docList, "Id", "Name");
         }
 
-        private SelectList PatientSelectList()
+        private async Task<SelectList> PatientSelectList()
         {
-            var docList = _unitOfWork.GetRepository<Patient>().Query().Select(x => new
-            {
-                x.Id,
-                x.Name
-            }).OrderBy(x => x.Name).ToList();
+            var docList = await _unitOfWork.GetRepository<Patient>().Query()
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Name
+                })
+                .OrderBy(x => x.Name)
+                .ToListAsync();
             return new SelectList(docList, "Id", "Name");
         }
     }

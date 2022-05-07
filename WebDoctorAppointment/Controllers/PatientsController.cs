@@ -4,7 +4,6 @@ using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using WebDoctorAppointment.Models;
 
@@ -85,11 +84,6 @@ namespace WebDoctorAppointment.Controllers
             patient.Name = pntmodel.Name;
             await repo.Save();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool PatientExists(int id)
-        {
-            return _unitOfWork.GetRepository<Patient>().Query().Any(d => d.Id == id);
         }
 
         // GET: Patients/Delete/5

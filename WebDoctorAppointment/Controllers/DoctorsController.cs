@@ -3,7 +3,6 @@ using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Models;
@@ -36,7 +35,7 @@ namespace WebDoctorAppointment.Controllers
         [AcceptVerbs("GET", "POST")]
         public async Task<IActionResult> DoesRoomExist(int room, int id)
         {
-            var result = false;
+            bool result;
             var repo = _unitOfWork.GetRepository<Doctor>();
 
             if (id != 0)
@@ -50,6 +49,7 @@ namespace WebDoctorAppointment.Controllers
             }
             return Json(!result);
         }
+
         public IActionResult Create()
         {
             return View();
@@ -104,7 +104,7 @@ namespace WebDoctorAppointment.Controllers
         // GET: Doctor/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
-            var doctor = await _unitOfWork.GetRepository<Doctor>().GetById((int)id);
+            var doctor = await _unitOfWork.GetRepository<Doctor>().GetById(id);
             if (doctor == null)
                 return NotFound();
 
