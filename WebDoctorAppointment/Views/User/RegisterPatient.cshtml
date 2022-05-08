@@ -10,27 +10,27 @@
 	<div class="col-md-4">
 		<form asp-action="RegisterPatient">
 			<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-			<div class="form-group">
+			<div class="mb-3">
 				<label asp-for="Name"></label>
 				<input asp-for="Name" class="form-control" />
 				<span asp-validation-for="Name" class="text-danger"></span>
 			</div>
-			<div class="form-group">
+			<div class="mb-3">
 				<label asp-for="UserName"></label>
 				<input asp-for="UserName" class="form-control" />
 				<span asp-validation-for="UserName" class="text-danger"></span>
 			</div>
-			<div class="form-group">
+			<div class="mb-3">
 				<label asp-for="Password"></label>
 				<input asp-for="Password" class="form-control" />
 				<span asp-validation-for="Password" class="text-danger"></span>
 			</div>
-			<div class="form-group">
+			<div class="mb-3">
 				<label asp-for="PasswordConfirm"></label>
 				<input asp-for="PasswordConfirm" class="form-control" />
 				<span asp-validation-for="PasswordConfirm" class="text-danger"></span>
 			</div>
-			<div class="form-group">
+			<div class="mb-3">
 				<input type="submit" value="Регистрация" class="btn btn-primary" />
 			</div>
 		</form>

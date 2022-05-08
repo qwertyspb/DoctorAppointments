@@ -1,3 +1,4 @@
+using System;
 using DocAppLibrary;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
@@ -32,8 +33,20 @@ namespace WebDoctorAppointment
                     opt.Password.RequireDigit = false;
                     opt.Password.RequireLowercase = false;
                     opt.Password.RequireUppercase = false;
+                    opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                    opt.Lockout.MaxFailedAccessAttempts = 5;
+                    opt.Lockout.AllowedForNewUsers = true;
                 })
-                .AddEntityFrameworkStores<DocVisitContext>();
+                .AddEntityFrameworkStores<DocVisitContext>()
+                .AddErrorDescriber<RussianIdentityErrorDescriber>();
+            services.ConfigureApplicationCookie(opt =>
+            {
+                opt.Cookie.HttpOnly = true;
+                opt.ExpireTimeSpan = TimeSpan.FromDays(3);
+                opt.LoginPath = "/login";
+                opt.AccessDeniedPath = "/accessDenied";
+                opt.SlidingExpiration = true;
+            });
             services.AddScoped<IUnitOfWork, UnitOfWork<DocVisitContext>>();
         }
 

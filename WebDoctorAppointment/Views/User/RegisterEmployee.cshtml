@@ -1,0 +1,80 @@
+﻿@model WebDoctorAppointment.Models.EmployeeViewModel
+
+@{
+	ViewData["Title"] = "Регистрация сотрудника";
+}
+
+<h4>Регистрация сотрудника</h4>
+<hr />
+<div class="row">
+	<div class="col-md-4">
+		<form asp-action="RegisterEmployee">
+			<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+			<input type="hidden" asp-for="Id" />
+			<div class="mb-3">
+				<label asp-for="Name"></label>
+				<input asp-for="Name" class="form-control" />
+				<span asp-validation-for="Name" class="text-danger"></span>
+			</div>
+			<div class="mb-3">
+				<label asp-for="UserName"></label>
+				<input asp-for="UserName" class="form-control" />
+				<span asp-validation-for="UserName" class="text-danger"></span>
+			</div>
+			<div class="mb-3">
+				<label asp-for="Password"></label>
+				<input asp-for="Password" class="form-control" />
+				<span asp-validation-for="Password" class="text-danger"></span>
+			</div>
+			<div class="mb-3">
+				<label asp-for="PasswordConfirm"></label>
+				<input asp-for="PasswordConfirm" class="form-control" />
+				<span asp-validation-for="PasswordConfirm" class="text-danger"></span>
+			</div>
+			<div class="mb-3" id="room" style="display:none;">
+				<label asp-for="Room"></label>
+				<input asp-for="Room" class="form-control"/>
+				<span asp-validation-for="Room" class="text-danger"></span>
+			</div>
+			<div class="mb-3">
+				<label>Роли</label>
+			@foreach (var role in Model.AllRoles)
+			{
+			<div class="form-check">
+				<input type="checkbox" class="form-check-input" name="roles" value="@role" id="@(role == "doctor" ? role : "rolecheckbox")"
+				       @(Model.UserRoles.Contains(role) ? "checked" : "") />
+				<label class="form-check-label" for="@(role == "doctor" ? role : "rolecheckbox")">@role</label>
+			</div>
+			}
+			</div>
+			<div class="mb-3">
+				<input type="submit" value="Сохранить" id="save" class="btn btn-primary" disabled />
+			</div>
+		</form>
+	</div>
+</div>
+
+@section Scripts {
+	@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+	<script>
+		if ($('#doctor').is(':checked')) {
+			$('#room').show();
+		}
+
+		var count = $(':checkbox:checked').length;
+		$('#save').prop("disabled", count === 0);
+	
+		$('#doctor').click(function(){
+			if ($(this).is(':checked')){
+				$('#room').show(100);
+			} else {
+				$('#room').hide(100);
+			}
+		});
+
+		$(':checkbox').click(function() {
+			var count = $(':checkbox:checked').length;
+			$('#save').prop("disabled", count === 0);
+		});
+	</script>
+}

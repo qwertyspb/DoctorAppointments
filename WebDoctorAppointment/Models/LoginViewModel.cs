@@ -5,7 +5,7 @@ namespace WebDoctorAppointment.Models;
 public class LoginViewModel
 {
     [Required(ErrorMessage = "Поле не может быть пустым")]
-    [Display(Name = "Имя входа")]
+    [Display(Name = "Имя")]
     public string UserName { get; set; }
 
     [Required(ErrorMessage = "Поле не может быть пустым")]

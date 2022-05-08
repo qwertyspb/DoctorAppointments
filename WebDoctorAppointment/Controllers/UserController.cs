@@ -1,8 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -12,12 +16,15 @@ namespace WebDoctorAppointment.Controllers
         private readonly IUnitOfWork _uow;
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserController(IUnitOfWork uow, UserManager<User> userManager, SignInManager<User> signInManager)
+        public UserController(IUnitOfWork uow, UserManager<User> userManager, SignInManager<User> signInManager,
+            RoleManager<IdentityRole> roleManager)
         {
             _uow = uow;
             _userManager = userManager;
             _signInManager = signInManager;
+            _roleManager = roleManager;
         }
 
         [HttpGet]
@@ -47,7 +54,7 @@ namespace WebDoctorAppointment.Controllers
             await _userManager.AddToRoleAsync(user, Constants.PatientRole);
 
             await _signInManager.SignInAsync(user, false);
-            return RedirectToAction("Index", "Appointments");
+            return RedirectToAction("Index", "Patients");
         }
 
         [HttpGet]
@@ -71,17 +78,77 @@ namespace WebDoctorAppointment.Controllers
 
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
-            
+
+            var user = await _userManager.FindByNameAsync(model.UserName);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            if(roles.Contains(Constants.PatientRole))
+                return RedirectToAction("Index", "Patients");
+            if(roles.Contains(Constants.DoctorRole))
+                return RedirectToAction("Index", "Doctors");
             return RedirectToAction("Index", "Appointments");
         }
 
         [HttpPost]
         [Route("logout")]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
             return RedirectToAction("Index", "Appointments");
+        }
+
+        [HttpGet]
+        [Route("signup")]
+        [Authorize(Roles = Constants.AdminRole)]
+        public async Task<IActionResult> RegisterEmployee() => View(new EmployeeViewModel
+        {
+            AllRoles = await GetEmployeeRoles()
+        });
+
+        [HttpPost]
+        [Route("signup")]
+        [Authorize(Roles = Constants.AdminRole)]
+        public async Task<IActionResult> RegisterEmployee(EmployeeViewModel model, List<string> roles)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.AllRoles = await GetEmployeeRoles();
+                return View(model);
+            }
+
+            var repo = _uow.GetRepository<Doctor>();
+            var doctorId = default(int?);
+
+            if (roles.Contains(Constants.DoctorRole))
+            {
+                var doctor = new Doctor { Name = model.Name, Room = model.Room };
+                await repo.Create(doctor);
+                doctorId = doctor.Id;
+            }
+
+            var user = new User { UserName = model.UserName, Uid = doctorId };
+            var result = await _userManager.CreateAsync(user, model.Password);
+            if (!result.Succeeded)
+            {
+                if (doctorId.HasValue)
+                    await repo.Delete(doctorId.Value);
+                foreach (var error in result.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+                model.AllRoles = await GetEmployeeRoles();
+                return View(model);
+            }
+
+            await _userManager.AddToRolesAsync(user, roles);
+
+            return RedirectToAction("Index", "Appointments");
+        }
+
+        private async Task<List<string>> GetEmployeeRoles()
+        {
+            var roles = await _roleManager.Roles.ToListAsync();
+            return roles.Where(x => x.Name != Constants.PatientRole).Select(x => x.Name).ToList();
         }
     }
 }

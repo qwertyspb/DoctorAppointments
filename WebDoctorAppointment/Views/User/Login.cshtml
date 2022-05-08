@@ -10,21 +10,23 @@
 	<div class="col-md-4">
 		<form asp-action="Login">
 			<div asp-validation-summary="ModelOnly" class="text-danger"></div>
-			<div class="form-group">
+			<div class="form-floating mb-3">
+				<input asp-for="UserName" class="form-control" placeholder="login"/>
 				<label asp-for="UserName"></label>
-				<input asp-for="UserName" class="form-control" />
 				<span asp-validation-for="UserName" class="text-danger"></span>
 			</div>
-			<div class="form-group">
+			<div class="form-floating mb-3">
+				<input asp-for="Password" class="form-control" placeholder="password"/>
 				<label asp-for="Password"></label>
-				<input asp-for="Password" class="form-control" />
 				<span asp-validation-for="Password" class="text-danger"></span>
 			</div>
-			<div class="form-group">
+			<div class="mb-3">
+			<div class="form-check form-check-inline">
 				<label asp-for="RememberMe"></label>
-				<input asp-for="RememberMe" />
+				<input asp-for="RememberMe" class="form-check-input"/>
 			</div>
-			<div class="form-group">
+			</div>
+			<div class="mb-3">
 				<input type="submit" value="Вход" class="btn btn-primary" />
 			</div>
 		</form>

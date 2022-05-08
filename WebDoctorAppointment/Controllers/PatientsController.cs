@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
 {
+    [Authorize(Roles = Constants.PatientRole)]
     public class PatientsController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
