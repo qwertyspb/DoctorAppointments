@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32228.343
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DoctorsAppointmentDB", "src\DoctorsAppointmentDB.csproj", "{D61966FE-946D-4BE6-B766-BF0D9103CBE1}"
 EndProject
@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebDoctorAppointment", "Web
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DocAppLibrary", "DocAppLibrary\DocAppLibrary.csproj", "{1A64D6C4-2C0C-4E2C-B4FC-DAFABF2A2848}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{C844009C-9BDF-4417-B3C4-35A01303A948}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\UnitTests.csproj", "{C844009C-9BDF-4417-B3C4-35A01303A948}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusinessLogicLibrary", "BusinessLogicLibrary\BusinessLogicLibrary.csproj", "{DC452670-C685-4EF6-A0F0-8F4289119F73}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{C844009C-9BDF-4417-B3C4-35A01303A948}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C844009C-9BDF-4417-B3C4-35A01303A948}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C844009C-9BDF-4417-B3C4-35A01303A948}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC452670-C685-4EF6-A0F0-8F4289119F73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC452670-C685-4EF6-A0F0-8F4289119F73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC452670-C685-4EF6-A0F0-8F4289119F73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC452670-C685-4EF6-A0F0-8F4289119F73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

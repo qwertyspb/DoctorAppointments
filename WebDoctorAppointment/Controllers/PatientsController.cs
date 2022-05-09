@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using BusinessLogicLibrary.Requests;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -11,21 +13,23 @@ namespace WebDoctorAppointment.Controllers
 {
     public class PatientsController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public PatientsController(IUnitOfWork unitOfWork)
+        private readonly IMediator _mediator;
+
+        public PatientsController(IMediator mediator)
         {
-            _unitOfWork = unitOfWork;
+            _mediator = mediator;
             _mapper = new MapperConfiguration(x =>
             {
                 x.CreateMap<Patient, PatientViewModel>();
                 x.CreateMap<PatientViewModel, Patient>().ForMember(dst => dst.Appointments, opt => opt.Ignore());
             }).CreateMapper();
+
         }
         // GET: Patients
         public async Task<IActionResult> Index()
         {
-            var patients = await _unitOfWork.GetRepository<Patient>().Query().ToListAsync();
+            var patients = await _mediator.Send(new PatientQueryAllRequest());
             var pntmodels = _mapper.Map<List<PatientViewModel>>(patients);
             return View(pntmodels);
         }
@@ -43,22 +47,23 @@ namespace WebDoctorAppointment.Controllers
         {
             if (ModelState.IsValid)
             {
-                var patient = _mapper.Map<Patient>(pntmodel);
-                await _unitOfWork.GetRepository<Patient>().Create(patient);
+                await _mediator.Send(new PatientAddRequest
+                {
+                    Name = pntmodel.Name
+                });
                 return RedirectToAction(nameof(Index));
             }
             return View(pntmodel);
         }
 
         // GET: Patients/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
+            var patient = await _mediator.Send(new PatientByIdRequest
             {
-                return NotFound();
-            }
+                Id = id
+            });
 
-            var patient = await _unitOfWork.GetRepository<Patient>().GetById((int)id);
             var pntmodel = _mapper.Map<PatientViewModel>(patient);
             if (pntmodel == null)
             {
@@ -70,31 +75,27 @@ namespace WebDoctorAppointment.Controllers
         // POST: Patients/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, PatientViewModel pntmodel)
+        public async Task<IActionResult> Edit(PatientViewModel pntmodel)
         {
             if (!ModelState.IsValid)
                 return View(pntmodel);
 
-            var repo = _unitOfWork.GetRepository<Patient>();
-            var patient = await repo.GetById(pntmodel.Id);
+            await _mediator.Send(new PatientEditRequest
+            {
+                Id = pntmodel.Id,
+                Name = pntmodel.Name
+            });
 
-            if (patient== null)
-                return NotFound();
-
-            patient.Name = pntmodel.Name;
-            await repo.Save();
             return RedirectToAction(nameof(Index));
         }
 
         // GET: Patients/Delete/5
-        public async Task<IActionResult> Delete(int? id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (id == null)
-                return NotFound();
-
-            var patient = await _unitOfWork.GetRepository<Patient>().GetById((int)id);
-            if (patient == null)
-                return NotFound();
+            var patient = await _mediator.Send(new PatientByIdRequest
+            {
+                Id = id
+            });
 
             var pntmodel = _mapper.Map<PatientViewModel>(patient);
             if (pntmodel == null)
@@ -108,7 +109,10 @@ namespace WebDoctorAppointment.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            await _unitOfWork.GetRepository<Patient>().Delete(id);
+            await _mediator.Send(new PatientDeleteRequest
+            {
+                Id = id
+            });
             return RedirectToAction(nameof(Index));
         }
     }

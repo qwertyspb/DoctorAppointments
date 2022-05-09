@@ -1,5 +1,7 @@
+using BusinessLogicLibrary.Requests;
 using DocAppLibrary;
 using DocAppLibrary.Interfaces;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +26,7 @@ namespace WebDoctorAppointment
             services.AddControllersWithViews();
             services.AddDbContext<DocVisitContext>(opt => opt.UseSqlite(Configuration.GetConnectionString("DbConnection")));
             services.AddScoped<IUnitOfWork, UnitOfWork<DocVisitContext>>();
+            services.AddMediatR(typeof(DoctorAddRequest));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
