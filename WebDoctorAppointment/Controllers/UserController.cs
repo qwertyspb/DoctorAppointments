@@ -28,11 +28,11 @@ namespace WebDoctorAppointment.Controllers
         }
 
         [HttpGet]
-        [Route("register")]
+        [Route("signup")]
         public IActionResult RegisterPatient() => View();
 
         [HttpPost]
-        [Route("register")]
+        [Route("signup")]
         public async Task<IActionResult> RegisterPatient(RegisterViewModel model)
         {
             if (!ModelState.IsValid) return View(model);
@@ -58,11 +58,17 @@ namespace WebDoctorAppointment.Controllers
         }
 
         [HttpGet]
-        [Route("login")]
-        public IActionResult Login(string returnUrl = null) => View(new LoginViewModel { ReturnUrl = returnUrl });
+        [Route("signin")]
+        public IActionResult Login(string returnUrl = null)
+        {
+            if (User.Identity?.IsAuthenticated ?? false)
+                return RedirectToAction("Index", "Home");
+
+            return View(new LoginViewModel { ReturnUrl = returnUrl });
+        }
 
         [HttpPost]
-        [Route("login")]
+        [Route("signin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -79,38 +85,31 @@ namespace WebDoctorAppointment.Controllers
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
 
-            var user = await _userManager.FindByNameAsync(model.UserName);
-            var roles = await _userManager.GetRolesAsync(user);
-
-            if(roles.Contains(Constants.PatientRole))
-                return RedirectToAction("Index", "Patients");
-            if(roles.Contains(Constants.DoctorRole))
-                return RedirectToAction("Index", "Doctors");
-            return RedirectToAction("Index", "Appointments");
+            return RedirectToAction("Index", "Home");
         }
 
         [HttpPost]
-        [Route("logout")]
+        [Route("signout")]
         [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Appointments");
+            return RedirectToAction("Login");
         }
 
         [HttpGet]
-        [Route("signup")]
+        [Route("register")]
         [Authorize(Roles = Constants.AdminRole)]
-        public async Task<IActionResult> RegisterEmployee() => View(new EmployeeViewModel
+        public async Task<IActionResult> RegisterEmployee() => View(new RegisterEmployeeViewModel
         {
             AllRoles = await GetEmployeeRoles()
         });
 
         [HttpPost]
-        [Route("signup")]
+        [Route("register")]
         [Authorize(Roles = Constants.AdminRole)]
-        public async Task<IActionResult> RegisterEmployee(EmployeeViewModel model, List<string> roles)
+        public async Task<IActionResult> RegisterEmployee(RegisterEmployeeViewModel model, List<string> roles)
         {
             if (!ModelState.IsValid)
             {
@@ -123,12 +122,18 @@ namespace WebDoctorAppointment.Controllers
 
             if (roles.Contains(Constants.DoctorRole))
             {
-                var doctor = new Doctor { Name = model.Name, Room = model.Room };
+                var doctor = new Doctor { Name = model.Name, Room = model.Room ?? 0 };
                 await repo.Create(doctor);
                 doctorId = doctor.Id;
             }
 
-            var user = new User { UserName = model.UserName, Uid = doctorId };
+            var user = new User
+            {
+                UserName = model.UserName,
+                Email = model.Email,
+                PhoneNumber = model.Phone,
+                Uid = doctorId
+            };
             var result = await _userManager.CreateAsync(user, model.Password);
             if (!result.Succeeded)
             {
@@ -142,13 +147,148 @@ namespace WebDoctorAppointment.Controllers
 
             await _userManager.AddToRolesAsync(user, roles);
 
-            return RedirectToAction("Index", "Appointments");
+            return RedirectToAction("GetEmployees");
         }
+
+        [HttpGet]
+        [Route("employees")]
+        [Authorize(Roles = Constants.AdminRole)]
+        public async Task<IActionResult> GetEmployees(string name, int page = 1)
+        {
+            const int pageSize = 10;
+
+            var query = from u in _userManager.Users
+                join d in _uow.GetRepository<Doctor>().Query()
+                    on u.Uid equals d.Id into grouping
+                from p in grouping.DefaultIfEmpty()
+                select new { User = u, Doctor = p };
+
+            if (!string.IsNullOrEmpty(name))
+                query = query.Where(x =>
+                    (x.Doctor != null && x.Doctor.Name.Contains(name)) || x.User.UserName.Contains(name));
+
+            query = query.OrderBy(x => x.User.UserName);
+
+            var count = await query.CountAsync();
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var employees = items.Select(x => new EmployeeViewModel
+            {
+                Id = x.User.Id,
+                UserName = x.User.UserName,
+                Email = x.User.Email,
+                Phone = x.User.PhoneNumber,
+                LockoutEnd = x.User.LockoutEnd,
+                Name = x.Doctor?.Name,
+                Room = x.Doctor?.Room
+            });
+
+            var model = new EmployeesViewModel
+            {
+                PageViewModel = new PageViewModel(count, page, pageSize),
+                FilterViewModel = new FilterViewModel(name),
+                Users = employees
+            };
+
+            return View(model);
+        }
+
+        [HttpGet]
+        [Route("employee")]
+        [Authorize(Roles = Constants.AdminRole)]
+        public async Task<IActionResult> EditEmployee(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
+
+            var model = new EmployeeViewModel
+            {
+                UserName = user.UserName,
+                Id = user.Id,
+                Uid = user.Uid,
+                Email = user.Email,
+                Phone = user.PhoneNumber,
+                AllRoles = await GetEmployeeRoles(),
+                UserRoles = await GetEmployeeRoles(user)
+            };
+
+            if (model.UserRoles.Contains(Constants.DoctorRole))
+            {
+                var doctor = await _uow.GetRepository<Doctor>().GetById(user.Uid ?? 0);
+                if (doctor != null)
+                {
+                    model.Name = doctor.Name;
+                    model.Room = doctor.Room == 0 ? null : doctor.Room;
+                }
+            }
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [Route("employee")]
+        [Authorize(Roles = Constants.AdminRole)]
+        public async Task<IActionResult> EditEmployee(EmployeeViewModel model, List<string> roles)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.AllRoles = await GetEmployeeRoles();
+                model.UserRoles = roles;
+                return View(model);
+            }
+
+            var user = await _userManager.FindByIdAsync(model.Id);
+            if (user == null) return NotFound();
+
+            var repo = _uow.GetRepository<Doctor>();
+            if (roles.Contains(Constants.DoctorRole))
+            {
+                var doctor = await repo.GetById(model.Uid ?? 0);
+                if (doctor != null)
+                {
+                    doctor.Name = model.Name;
+                    doctor.Room = model.Room ?? 0;
+                }
+                await repo.Save();
+            }
+
+            user.Email = model.Email;
+            user.PhoneNumber = model.Phone;
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+                model.AllRoles = await GetEmployeeRoles();
+                model.UserRoles = roles;
+                return View(model);
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var addedRoles = roles.Except(userRoles);
+            var removedRoles = userRoles.Except(roles);
+            await _userManager.AddToRolesAsync(user, addedRoles);
+            await _userManager.RemoveFromRolesAsync(user, removedRoles);
+
+            return RedirectToAction("GetEmployees");
+        }
+
+        [HttpGet]
+        [Route("accessDenied")]
+        public IActionResult AccessDenied() => View();
 
         private async Task<List<string>> GetEmployeeRoles()
         {
             var roles = await _roleManager.Roles.ToListAsync();
             return roles.Where(x => x.Name != Constants.PatientRole).Select(x => x.Name).ToList();
+        }
+
+        private async Task<List<string>> GetEmployeeRoles(User user)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            return roles.ToList();
         }
     }
 }

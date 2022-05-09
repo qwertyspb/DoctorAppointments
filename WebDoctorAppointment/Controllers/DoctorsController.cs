@@ -4,11 +4,13 @@ using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
 {
+    [Authorize(Roles = Constants.DoctorRole)]
     public class DoctorsController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;

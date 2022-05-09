@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Linq;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -16,8 +17,13 @@ namespace WebDoctorAppointment.Controllers
 
         public IActionResult Index()
         {
-            _logger.LogInformation("Hello World");
-            return View();
+            if (User.Identity?.IsAuthenticated ?? false)
+            {
+                var userRole = Constants.KnownRoles.FirstOrDefault(x => User.IsInRole(x));
+                return RedirectByRole(userRole);
+            }
+
+            return RedirectToAction("Login", "User");
         }
 
         public IActionResult Privacy()
@@ -29,6 +35,23 @@ namespace WebDoctorAppointment.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        private RedirectToActionResult RedirectByRole(string role)
+        {
+            switch (role)
+            {
+                case Constants.ManagerRole:
+                    return RedirectToAction("Index", "Appointments");
+                case Constants.AdminRole:
+                    return RedirectToAction("GetEmployees", "User");
+                case Constants.DoctorRole:
+                    return RedirectToAction("Index", "Doctors");
+                case Constants.PatientRole:
+                    return RedirectToAction("Index", "Patients");
+            }
+
+            return RedirectToAction("Error");
         }
     }
 }

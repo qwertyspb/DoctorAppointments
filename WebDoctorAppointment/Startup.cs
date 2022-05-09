@@ -43,7 +43,7 @@ namespace WebDoctorAppointment
             {
                 opt.Cookie.HttpOnly = true;
                 opt.ExpireTimeSpan = TimeSpan.FromDays(3);
-                opt.LoginPath = "/login";
+                opt.LoginPath = "/signin";
                 opt.AccessDeniedPath = "/accessDenied";
                 opt.SlidingExpiration = true;
             });
@@ -75,7 +75,7 @@ namespace WebDoctorAppointment
             {
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller=Appointments}/{action=Index}/{id?}");
+                    pattern: "{controller=Home}/{action=Index}/{id?}");
             });
         }
     }

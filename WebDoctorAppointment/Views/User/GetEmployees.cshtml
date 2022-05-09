@@ -1,0 +1,49 @@
+﻿@model WebDoctorAppointment.Models.EmployeesViewModel
+
+@{
+	ViewData["Title"] = "Список сотрудников";
+}
+
+<h4>Список сотрудников</h4>
+<hr />
+<div class="row">
+	<div class="col-md-4">
+		<form asp-action="GetEmployees" method="get" class="row g-3">
+			<div class="col-auto">
+				<input name="name" type="text" id="name" value="@Model.FilterViewModel.SearchName" class="form-control" />
+			</div>
+			<div class="col-auto">
+				<input type="submit" value="Поиск" class="btn btn-primary" />
+			</div>
+		</form>
+	</div>
+	<div class="col-md-4"></div>
+	<div class="col-md-4">
+		<div class="col-auto float-end">
+			<a asp-action="RegisterEmployee" class="btn btn-sm btn-primary">Добавить</a>
+		</div>
+	</div>
+</div>
+<table class="table table-hover">
+	<thead>
+	<tr>
+		<th scope="col">Имя</th>
+		<th scope="col">ФИО</th>
+		<th scope="col">Кабинет</th>
+		<th scope="col">Почта</th>
+		<th scope="col">Телефон</th>
+		<th scope="col">Заблокирован до</th>
+		<th></th>
+	</tr>
+	</thead>
+	<tbody>
+	@foreach (var user in Model.Users)
+	{
+		<tr><td>@user.UserName</td><td>@user.Name</td><td>@user.Room</td><td>@user.Email</td><td>@user.Phone</td><td>@user.LockoutEnd</td>
+			<td><a asp-action="EditEmployee" asp-route-id="@user.Id" class="btn btn-sm btn-primary">Изменить</a></td></tr>
+	}
+	</tbody>
+</table>
+
+<page-link page-model="Model.PageViewModel" page-action="GetEmployees"
+           page-url-name="@(Model.FilterViewModel.SearchName)"></page-link>

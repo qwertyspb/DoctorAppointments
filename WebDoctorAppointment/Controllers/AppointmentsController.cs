@@ -10,9 +10,11 @@ using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Extensions;
 using WebDoctorAppointment.Models;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WebDoctorAppointment.Controllers
 {
+    [Authorize(Roles = Constants.ManagerRole)]
     public class AppointmentsController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;

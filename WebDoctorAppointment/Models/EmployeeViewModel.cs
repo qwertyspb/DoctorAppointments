@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,24 +16,27 @@ public class EmployeeViewModel
     public string UserName { get; set; }
 
     [Required(ErrorMessage = "Поле не может быть пустым")]
-    [StringLength(256, ErrorMessage = "{0} должен быть от {2} до {1} символов", MinimumLength = 6)]
-    [DataType(DataType.Password)]
-    [Display(Name = "Пароль")]
-    public string Password { get; set; }
-
-    [Required(ErrorMessage = "Поле не может быть пустым")]
-    [StringLength(256, ErrorMessage = "{0} должен быть от {2} до {1} символов", MinimumLength = 6)]
-    [Compare("Password", ErrorMessage = "Пароли не совпадают")]
-    [DataType(DataType.Password)]
-    [Display(Name = "Подтвердите пароль")]
-    public string PasswordConfirm { get; set; }
-
-    [Required(ErrorMessage = "Поле Кабинет не может быть пустым")]
     [Display(Name = "Кабинет")]
-    public int Room { get; set; }
+    public int? Room { get; set; }
+
+    [Display(Name = "Электронная почта")]
+    [EmailAddress(ErrorMessage = "Неправильный формат адреса электронной почты")]
+    [DataType(DataType.EmailAddress)]
+    public string Email { get; set; }
+
+    [Display(Name = "Телефон")]
+    [Phone(ErrorMessage = "Неправильный формат номера телефона")]
+    [DataType(DataType.PhoneNumber)]
+    public string Phone { get; set; }
+
+    [Display(Name = "Дата окончания блокировки")]
+    public DateTimeOffset? LockoutEnd { get; set; }
 
     [HiddenInput]
     public string Id { get; set; }
+
+    [HiddenInput]
+    public int? Uid { get; set; }
 
     public List<string> AllRoles { get; set; } = new();
 

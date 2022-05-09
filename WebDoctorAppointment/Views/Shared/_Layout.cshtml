@@ -12,7 +12,7 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-controller="Appointments" asp-action="Index">Список назначений</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Запись на прием</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -31,7 +31,7 @@
 	                    @if(User.Identity.IsAuthenticated)
 	                    {
 		                    <li class="nav-item">
-								<p class="nav-link text-dark font-weight-bold">@User.Identity.Name</p>
+			                    <span class="nav-link text-dark">Привет, <b>@User.Identity.Name</b>!</span>
 		                    </li>
 
 							<li class="nav-item">
@@ -43,7 +43,7 @@
 	                    else
 	                    {
 		                    <li class="nav-item">
-			                    <a class="nav-link text-dark" asp-controller="User" asp-action="Login">Вход</a>
+			                    <a class="nav-link text-dark" asp-controller="User" asp-action="Login">Войти</a>
 			                </li>
 		                    <li class="nav-item">
 			                    <a class="nav-link text-dark" asp-controller="User" asp-action="RegisterPatient">Регистрация</a>
