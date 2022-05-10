@@ -1,7 +1,7 @@
-using System;
 using DocAppLibrary;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -9,10 +9,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using BusinessLogicLibrary.Requests.Doctor;
 
 namespace WebDoctorAppointment
 {
-    public class Startup
+	public class Startup
     {
         public Startup(IConfiguration configuration)
         {
@@ -48,6 +50,7 @@ namespace WebDoctorAppointment
                 opt.SlidingExpiration = true;
             });
             services.AddScoped<IUnitOfWork, UnitOfWork<DocVisitContext>>();
+            services.AddMediatR(typeof(DoctorAddRequest));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

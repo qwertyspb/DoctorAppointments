@@ -7,7 +7,7 @@ namespace WebDoctorAppointment.Models;
 
 public class EmployeeViewModel
 {
-    [Required(ErrorMessage = "Поле не может быть пустым")]
+//    [Required(ErrorMessage = "Поле не может быть пустым")]
     [Display(Name = "ФИО сотрудника")]
     public string Name { get; set; }
 
@@ -15,7 +15,6 @@ public class EmployeeViewModel
     [Display(Name = "Имя входа в систему")]
     public string UserName { get; set; }
 
-    [Required(ErrorMessage = "Поле не может быть пустым")]
     [Display(Name = "Кабинет")]
     public int? Room { get; set; }
 

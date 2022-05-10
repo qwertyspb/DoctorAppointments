@@ -1,4 +1,4 @@
-﻿namespace WebDoctorAppointment;
+﻿namespace BusinessLogicLibrary;
 
 public class Constants
 {

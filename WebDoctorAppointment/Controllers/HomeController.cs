@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Linq;
+using BusinessLogicLibrary;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers

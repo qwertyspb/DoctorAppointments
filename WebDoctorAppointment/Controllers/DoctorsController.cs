@@ -1,35 +1,37 @@
 ﻿using AutoMapper;
-using DocAppLibrary.Entities;
-using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BusinessLogicLibrary;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Models;
+using MediatR;
+using BusinessLogicLibrary.Requests;
+using BusinessLogicLibrary.Requests.Doctor;
+using BusinessLogicLibrary.Responses;
 
 namespace WebDoctorAppointment.Controllers
 {
     [Authorize(Roles = Constants.DoctorRole)]
     public class DoctorsController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMediator _mediator;
         private readonly IMapper _mapper;
 
-        public DoctorsController(IUnitOfWork unitOfWork)
+        public DoctorsController(IMediator mediator)
         {
-            _unitOfWork = unitOfWork;
+            _mediator = mediator;
             _mapper = new MapperConfiguration(x => 
             {
-                x.CreateMap<Doctor, DoctorViewModel>();
-                x.CreateMap<DoctorViewModel, Doctor>().ForMember(dst => dst.Appointments, opt => opt.Ignore());
+                x.CreateMap<DoctorDto, DoctorViewModel>();
+                x.CreateMap<DoctorViewModel, DoctorDto>();
             }).CreateMapper();
         }
 
         // GET: Doctors
         public async Task<IActionResult> Index()
         {
-            var doctors = await _unitOfWork.GetRepository<Doctor>().Query().ToListAsync();
+            var doctors = await _mediator.Send(new DoctorQueryAllRequest());
             var docmodels = _mapper.Map<List<DoctorViewModel>>(doctors);
             return View(docmodels);
         }
@@ -37,18 +39,12 @@ namespace WebDoctorAppointment.Controllers
         [AcceptVerbs("GET", "POST")]
         public async Task<IActionResult> DoesRoomExist(int room, int id)
         {
-            bool result;
-            var repo = _unitOfWork.GetRepository<Doctor>();
+            var result = await _mediator.Send(new DoesRoomExistRequest
+            {
+                Room = room,
+                Id = id
+            });
 
-            if (id != 0)
-            {
-                var doctor = await repo.GetById(id);
-                result = await repo.Query().AnyAsync(x => x.Room == room && x.Room != doctor.Room);
-            }
-            else
-            {
-                result = await repo.Query().AnyAsync(x => x.Room == room);
-            }
             return Json(!result);
         }
 
@@ -64,8 +60,11 @@ namespace WebDoctorAppointment.Controllers
         {
             if (ModelState.IsValid)
             {
-                var doctor = _mapper.Map<Doctor>(docmodel);
-                await _unitOfWork.GetRepository<Doctor>().Create(doctor);
+                await _mediator.Send(new DoctorAddRequest
+                {
+                    Name = docmodel.Name,
+                    Room = docmodel.Room
+                });
                 return RedirectToAction(nameof(Index));
             }
             return View(docmodel);
@@ -74,11 +73,15 @@ namespace WebDoctorAppointment.Controllers
         // GET: Doctors/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var doctor = await _unitOfWork.GetRepository<Doctor>().GetById(id);
-            if (doctor == null)
-                return NotFound();
+            var doctor = await _mediator.Send(new DoctorByIdRequest
+            {
+                Id = id
+            });
             
             var docmodel = _mapper.Map<DoctorViewModel>(doctor);
+            if(docmodel == null)
+                return NotFound();
+
             return View(docmodel);
         }
 
@@ -90,15 +93,11 @@ namespace WebDoctorAppointment.Controllers
             if (!ModelState.IsValid)
                 return View(docmodel);
 
-            var repo = _unitOfWork.GetRepository<Doctor>();
-            var doctor = await repo.GetById(docmodel.Id);
-            
-            if (doctor == null)
-                return NotFound();
-
-            doctor.Name = docmodel.Name;
-            doctor.Room = docmodel.Room;
-            await repo.Save();
+            await _mediator.Send(new DoctorEditRequest
+            {
+                Name = docmodel.Name,
+                Room = docmodel.Room
+            });
 
             return RedirectToAction(nameof(Index));
         }
@@ -106,11 +105,15 @@ namespace WebDoctorAppointment.Controllers
         // GET: Doctor/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
-            var doctor = await _unitOfWork.GetRepository<Doctor>().GetById(id);
-            if (doctor == null)
-                return NotFound();
+            var doctor = await _mediator.Send(new DoctorByIdRequest
+            {
+                Id = id
+            });
 
             var docmodel = _mapper.Map<DoctorViewModel>(doctor);
+            if (docmodel == null)
+                return NotFound();
+
             return View(docmodel);
         }
 
@@ -119,7 +122,11 @@ namespace WebDoctorAppointment.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            await _unitOfWork.GetRepository<Doctor>().Delete(id);
+            await _mediator.Send(new DoctorDeleteRequest
+            {
+                Id = id
+            });
+
             return RedirectToAction(nameof(Index));
         }
     }

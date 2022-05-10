@@ -1,11 +1,9 @@
 ﻿using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
-using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace WebDoctorAppointment.Extensions
+namespace BusinessLogicLibrary.Extensions
 {
     public static class RepositoryExtensions
     {

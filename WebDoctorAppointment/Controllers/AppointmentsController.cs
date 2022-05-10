@@ -1,51 +1,50 @@
 ﻿using AutoMapper;
-using DocAppLibrary.Entities;
-using DocAppLibrary.Interfaces;
+using BusinessLogicLibrary;
+using BusinessLogicLibrary.Extensions;
+using BusinessLogicLibrary.Requests.Appointment;
+using BusinessLogicLibrary.Requests.Doctor;
+using BusinessLogicLibrary.Requests.Patient;
+using BusinessLogicLibrary.Responses;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using WebDoctorAppointment.Extensions;
-using WebDoctorAppointment.Models;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
 {
-    [Authorize(Roles = Constants.ManagerRole)]
+	[Authorize(Roles = Constants.ManagerRole)]
     public class AppointmentsController : Controller
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMediator _mediator;
         private readonly IMapper _mapper;
 
-        public AppointmentsController(IUnitOfWork unitOfWork)
+        public AppointmentsController(IMediator mediator)
         {
-            _unitOfWork = unitOfWork;
+            _mediator = mediator;
             _mapper = new MapperConfiguration(x =>
             {
-                x.CreateMap<Appointment, AppointmentViewModel>();
-                x.CreateMap<Appointment, EditAppointmentViewModel>();
-                x.CreateMap<EditAppointmentViewModel, Appointment>()
-                    .ForMember(dst => dst.Doctor, opt => opt.Ignore())
-                    .ForMember(dst => dst.Patient, opt => opt.Ignore());
+                x.CreateMap<EditAppointmentViewModel, AppointmentAddRequest>();
+                x.CreateMap<EditAppointmentViewModel, AppointmentEditRequest>();
+                x.CreateMap<AppointmentDto, EditAppointmentViewModel>();
+                x.CreateMap<AppointmentDto, AppointmentViewModel>();
             }).CreateMapper();
         }
 
         public async Task<IActionResult> Index(DateTime? dateFrom)
         {
-            var leftDate = dateFrom ?? DateTime.Today;
-            var rightDate = leftDate.AddDays(7);
-
-            var apps = await _unitOfWork.GetRepository<Appointment>().Query()
-                .Include(x => x.Doctor)
-                .Include(x => x.Patient)
-                .Where(x => x.StartTime >= leftDate && x.StartTime < rightDate)
-                .OrderBy(x => x.StartTime)
-                .ToListAsync();
+            var apps = await _mediator.Send(new AppointmentQueryByDateRequest
+            {
+                DateFrom = dateFrom
+            });
 
             var appmodels = _mapper.Map<List<AppointmentViewModel>>(apps);
+
+            var leftDate = dateFrom ?? DateTime.Today;
+            var rightDate = leftDate.AddDays(7);
 
             ViewData["DateFrom"] = leftDate;
             ViewData["DateTill"] = rightDate;
@@ -55,11 +54,7 @@ namespace WebDoctorAppointment.Controllers
 
         public async Task<IActionResult> IndexFull()
         {
-            var apps = await _unitOfWork.GetRepository<Appointment>().Query()
-                .Include(x => x.Doctor)
-                .Include(x => x.Patient)
-                .OrderBy(x => x.StartTime)
-                .ToListAsync();
+            var apps = await _mediator.Send(new AppointmentQueryAllRequest());
 
             var appmodels = _mapper.Map<List<AppointmentViewModel>>(apps);
 
@@ -93,9 +88,9 @@ namespace WebDoctorAppointment.Controllers
                 return View(appmodel);
             }
 
-            var repo = _unitOfWork.GetRepository<Appointment>();
-            if (await repo.CheckIntersection(appmodel.Id, appmodel.StartTime, appmodel.EndTime, appmodel.DoctorId,
-                    appmodel.PatientId))
+            var request = _mapper.Map<AppointmentAddRequest>(appmodel);
+            var id = await _mediator.Send(request);
+            if (id == 0)
             {
                 TempData["Alert"] = "Указанное время занято у выбранного доктора или пациента";
                 appmodel.Doctors = await DoctorSelectList();
@@ -103,16 +98,15 @@ namespace WebDoctorAppointment.Controllers
                 return View(appmodel);
             }
 
-            var app = _mapper.Map<Appointment>(appmodel);
-            await repo.Create(app);
-
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Edit(int id)
         {
-            var repo = _unitOfWork.GetRepository<Appointment>();
-            var app = await repo.GetById(id);
+            var app = await _mediator.Send(new AppointmentByIdRequest
+            {
+                Id = id
+            });
             if (app == null)
                 return NotFound();
 
@@ -134,8 +128,10 @@ namespace WebDoctorAppointment.Controllers
                 return View(model);
             }
 
-            var repo = _unitOfWork.GetRepository<Appointment>();
-            if (await repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId, model.PatientId))
+            var request = _mapper.Map<AppointmentEditRequest>(model);
+            var id = await _mediator.Send(request);
+
+            if (id == 0)
             {
                 TempData["Alert"] = "Указанное время занято у выбранного доктора или пациента";
                 model.Doctors = await DoctorSelectList();
@@ -143,25 +139,15 @@ namespace WebDoctorAppointment.Controllers
                 return View(model);
             }
 
-            var app = await repo.GetById(model.Id);
-            if (app == null)
-                return NotFound();
-
-            app.PatientId = model.PatientId;
-            app.DoctorId = model.DoctorId;
-            app.StartTime = model.StartTime.RoundUp(TimeSpan.FromMinutes(1));
-            app.EndTime = model.EndTime.RoundUp(TimeSpan.FromMinutes(1));
-
-            await repo.Save();
             return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Delete(int id)
         {
-            var app = await _unitOfWork.GetRepository<Appointment>().Query()
-                .Include(x => x.Doctor)
-                .Include(x => x.Patient)
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var app = await _mediator.Send(new AppointmentByIdRequest
+            {
+                Id = id
+            });
 
             if (app == null)
                 return NotFound();
@@ -175,43 +161,24 @@ namespace WebDoctorAppointment.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            await _unitOfWork.GetRepository<Appointment>().Delete(id);
-            return RedirectToAction(nameof(Index));
-        }
+            await _mediator.Send(new AppointmentDeleteRequest
+            {
+                Id = id
+            });
 
-        [AcceptVerbs("GET", "POST")]
-        public async Task<IActionResult> IsNotIntersected(EditAppointmentViewModel model)
-        {
-            var repo = _unitOfWork.GetRepository<Appointment>();
-            var result = await repo.CheckIntersection(model.Id, model.StartTime, model.EndTime, model.DoctorId,
-                model.PatientId);
-            return Json(!result);
+            return RedirectToAction(nameof(Index));
         }
 
         private async Task<SelectList> DoctorSelectList()
         {
-            var docList = await _unitOfWork.GetRepository<Doctor>().Query()
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Name
-                })
-                .OrderBy(x => x.Name)
-                .ToListAsync();
-            return new SelectList(docList, "Id", "Name");
+            var doctors = await _mediator.Send(new DoctorQueryAllRequest());
+            return new SelectList(doctors, "Id", "Name");
         }
 
         private async Task<SelectList> PatientSelectList()
         {
-            var docList = await _unitOfWork.GetRepository<Patient>().Query()
-                .Select(x => new
-                {
-                    x.Id,
-                    x.Name
-                })
-                .OrderBy(x => x.Name)
-                .ToListAsync();
-            return new SelectList(docList, "Id", "Name");
+            var patients = await _mediator.Send(new PatientQueryAllRequest());
+            return new SelectList(patients, "Id", "Name");
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace WebDoctorAppointment.Extensions
+﻿namespace BusinessLogicLibrary.Extensions
 {
     public static class DateTimeExtensions
     {

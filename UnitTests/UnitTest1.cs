@@ -3,8 +3,8 @@ using AutoMapper;
 using DocAppLibrary.Entities;
 using NUnit.Framework;
 using System.Collections.Generic;
+using BusinessLogicLibrary.Extensions;
 using FluentAssertions;
-using WebDoctorAppointment.Extensions;
 using WebDoctorAppointment.Models;
 
 namespace UnitTests
