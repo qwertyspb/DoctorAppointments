@@ -42,7 +42,7 @@ namespace WebDoctorAppointment.Controllers
             switch (role)
             {
                 case Constants.ManagerRole:
-                    return RedirectToAction("Index", "Appointments");
+                    return RedirectToAction("Index", "Manager");
                 case Constants.AdminRole:
                     return RedirectToAction("GetEmployees", "User");
                 case Constants.DoctorRole:
