@@ -1,43 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using WebDoctorAppointment.Models.ApiModels;
+﻿using BusinessLogicLibrary.Enums;
+using BusinessLogicLibrary.Responses;
+using DocAppLibrary.Enum;
 
-namespace WebDoctorAppointment;
+namespace BusinessLogicLibrary;
 
 public class TimeLineService
 {
-    public static DoctorShift DoctorShift = new DoctorShift
-    {
-        MorningShiftStarts = 8,
-        MorningShiftEnds = 12,
-        AfternoonShiftStarts = 13,
-        AfternoonShiftEnds = 17
-    };
-
-    public static List<AppointmentSlot> GenerateSlots(DateTime start, DateTime end, string scale)
+    public static List<AppointmentDto> GenerateSlots(DateTime start, DateTime end, SlotDurationType scale)
     {
         var timeline = GenerateTimeline(start, end, scale);
-        var slotDuration = scale switch
-        {
-            "15min" => 15,
-            "30min" => 30,
-            "hours" => 60,
-            _ => 60
-        };
+        var slotDuration = Constants.Scale[scale];
 
-        var result = new List<AppointmentSlot>();
+        var result = new List<AppointmentDto>();
         foreach (var cell in timeline.Where(cell => start <= cell.Start && cell.End <= end))
         {
             for (var slotStart = cell.Start; slotStart < cell.End; slotStart = slotStart.AddMinutes(slotDuration))
             {
                 var slotEnd = slotStart.AddMinutes(slotDuration);
 
-                var slot = new AppointmentSlot
+                var slot = new AppointmentDto
                 {
-                    Start = slotStart,
-                    End = slotEnd,
-                    Status = "free"
+                    StartTime = slotStart,
+                    EndTime = slotEnd,
+                    Status = StatusType.Free
                 };
 
                 result.Add(slot);
@@ -48,7 +33,7 @@ public class TimeLineService
     }
 
 
-    private static List<TimeCell> GenerateTimeline(DateTime start, DateTime end, string scale)
+    private static IEnumerable<TimeCell> GenerateTimeline(DateTime start, DateTime end, SlotDurationType scale)
     {
         var result = new List<TimeCell>();
 
@@ -62,16 +47,18 @@ public class TimeLineService
             days += 1;
         }
 
-        if (scale == "shifts")
+        if (scale == SlotDurationType.Shifts)
         {
-            incrementMorning = DoctorShift.MorningShiftEnds - DoctorShift.MorningShiftStarts;
-            incrementAfternoon = DoctorShift.AfternoonShiftEnds - DoctorShift.AfternoonShiftStarts;
+            incrementMorning = Constants.Shifts.MorningShiftEnds - Constants.Shifts.MorningShiftStarts;
+            incrementAfternoon = Constants.Shifts.AfternoonShiftEnds - Constants.Shifts.AfternoonShiftStarts;
         }
 
         for (var i = 0; i < days; i++)
         {
             var day = start.Date.AddDays(i);
-            for (var x = DoctorShift.MorningShiftStarts; x < DoctorShift.MorningShiftEnds; x += incrementMorning)
+            for (var x = Constants.Shifts.MorningShiftStarts;
+                 x < Constants.Shifts.MorningShiftEnds;
+                 x += incrementMorning)
             {
                 var cell = new TimeCell
                 {
@@ -81,7 +68,10 @@ public class TimeLineService
 
                 result.Add(cell);
             }
-            for (var x = DoctorShift.AfternoonShiftStarts; x < DoctorShift.AfternoonShiftEnds; x += incrementAfternoon)
+
+            for (var x = Constants.Shifts.AfternoonShiftStarts;
+                 x < Constants.Shifts.AfternoonShiftEnds;
+                 x += incrementAfternoon)
             {
                 var cell = new TimeCell
                 {

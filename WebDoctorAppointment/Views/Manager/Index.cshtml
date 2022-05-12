@@ -1,4 +1,4 @@
-﻿@model WebDoctorAppointment.Models.ApiModels.DoctorShift
+﻿@model BusinessLogicLibrary.Responses.DoctorShift
 @{
 	ViewData["Title"] = "Рабочее время";
 }
@@ -13,8 +13,8 @@
 	<div class="col">
 		<div class="btn-toolbar mb-1" role="toolbar" aria-label="Toolbar with button groups">
 			<div class="btn-group btn-group-sm me-2" role="group" aria-label="Scale">
-				<input type="radio" class="btn-check" value="15min" name="scale" id="scale-15min" autocomplete="off">
-				<label class="btn btn-outline-primary" for="scale-15min">15 минут</label>
+				<input type="radio" class="btn-check" value="min30" name="scale" id="scale-min30" autocomplete="off">
+				<label class="btn btn-outline-primary" for="scale-min30">30 минут</label>
 
 				<input type="radio" class="btn-check" value="hours" name="scale" id="scale-hours" autocomplete="off" checked>
 				<label class="btn btn-outline-primary" for="scale-hours">часы</label>
@@ -101,9 +101,9 @@
 				let increaseMorning; // in hours
 				let increaseAfternoon; // in hours
 				switch (scale) {
-				case "15min":
-					increaseMorning = 0.25;
-					increaseAfternoon = 0.25;
+				case "min30":
+					increaseMorning = 0.5;
+					increaseAfternoon = 0.5;
 					break;
 				case "hours":
 					increaseMorning = 1;
@@ -133,7 +133,7 @@
 			getTimeHeaders() {
 				const scale = app.elements.scaleChecked.value;
 				switch (scale) {
-				case "15min":
+				case "min30":
 					return [
 						{ groupBy: "Month" },
 						{ groupBy: "Day", format: "dddd d" },
@@ -266,7 +266,7 @@
 
 					dp.clearSelection();
 
-					const { data } = await DayPilot.Http.post("/api/daypilot/appointment/create", params);
+					const { data } = await DayPilot.Http.post("/api/daypilot/appointments/create", params);
 					app.loadEvents();
 					//dp.message(data.message);
 				}

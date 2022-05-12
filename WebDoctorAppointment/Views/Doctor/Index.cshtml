@@ -1,0 +1,173 @@
+﻿@{
+	ViewData["Title"] = "Запись на прием";
+}
+
+<h4>Запись на прием</h4>
+<hr />
+
+<div class="row">
+	<div class="col-auto">
+		<div id="nav"></div>
+	</div>
+	<div class="col">
+		<div id="calendar"></div>
+	</div>
+</div>
+
+@section Scripts {
+	@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+	<script src="~/lib/daypilot/daypilot-all.min.js"></script>
+
+	<script>
+		const app = {
+			//doctors: [],
+			//elements: {
+			//	doctor: document.querySelector("#doctor")
+			//},
+			async loadEvents(day) {
+				const start = nav.visibleStart();
+				const end = nav.visibleEnd();
+				//const doctor = app.elements.doctor.value;
+
+				const { data } = await DayPilot.Http.get(`/api/daypilot/appointments?start=${start}&end=${end}`);
+
+				if (day) {
+					calendar.startDate = day;
+				}
+				calendar.events.list = data;
+				calendar.update();
+
+				nav.events.list = data;
+				nav.update();
+			},
+			async init() {
+				//const { data } = await DayPilot.Http.get("/api/daypilot/doctors");
+
+				//app.doctors = data;
+
+				//app.doctors.forEach(item => {
+				//	const option = document.createElement("option");
+				//	option.value = item.id;
+				//	option.innerText = item.name;
+				//	app.elements.doctor.appendChild(option);
+				//});
+
+				//app.elements.doctor.addEventListener("change",
+				//	() => {
+				//		app.loadEvents();
+				//	});
+
+				app.loadEvents();
+			}
+		};
+
+		const nav = new DayPilot.Navigator("nav",
+			{
+				selectMode: "week",
+				locale: "ru-ru",
+				showMonths: 3,
+				skipMonths: 3,
+				onTimeRangeSelected: (args) => {
+					app.loadEvents(args.start.firstDayOfWeek(), args.start.addDays(7));
+				}
+			});
+		nav.init();
+
+		const calendar = new DayPilot.Calendar("calendar",
+			{
+				viewType: "Week",
+				locale: "ru-ru",
+				timeRangeSelectedHandling: "Disabled",
+				eventDeleteHandling: "Update",
+				onEventMoved: async (args) => {
+					const appointment = {
+						...args.e.data,
+						start: args.newStart,
+						end: args.newEnd
+					};
+					const { data } = await DayPilot.Http.put(`/api/daypilot/appointments/${appointment.id}`, appointment);
+				},
+				onEventResized: async (args) => {
+					const appointment = {
+						...args.e.data,
+						start: args.newStart,
+						end: args.newEnd
+					};
+					const { data } = await DayPilot.Http.put(`/api/daypilot/appointments/${appointment.id}`, appointment);
+				},
+				onEventDeleted: async (args) => {
+					const id = args.e.data.id;
+					await DayPilot.Http.delete(`/api/daypilot/appointments/${id}`);
+				},
+				onBeforeEventRender: (args) => {
+					switch (args.data.status) {
+					case "free":
+						args.data.backColor = "#3d85c6"; // blue
+						args.data.barHidden = true;
+						args.data.borderColor = "darker";
+						args.data.fontColor = "white";
+						break;
+					case "waiting":
+						args.data.backColor = "#e69138"; // orange
+						args.data.barHidden = true;
+						args.data.borderColor = "darker";
+						args.data.fontColor = "white";
+						break;
+					case "confirmed":
+						args.data.backColor = "#6aa84f"; // green
+						args.data.barHidden = true;
+						args.data.borderColor = "darker";
+						args.data.fontColor = "white";
+						break;
+					}
+				},
+				onEventClick: async (args) => {
+
+					const form = [
+						{ name: "Изменить запись на прием" },
+						{ name: "ФИО", id: "text" },
+						{
+							name: "Статус",
+							id: "status",
+							type: "select",
+							options: [
+								{ name: "Доступно", id: "free" },
+								{ name: "Ожидание", id: "waiting" },
+								{ name: "Подтверждено", id: "confirmed" },
+							]
+						},
+						{ name: "С", id: "start", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
+						{ name: "По", id: "end", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
+						{ name: "Доктор", id: "resource", disabled: true },// options: app.doctors },
+					];
+
+					const data = args.e.data;
+
+					const options = {
+						focus: "text",
+						locale: "ru-ru"
+					};
+
+					const modal = await DayPilot.Modal.form(form, data, options);
+					if (modal.canceled) {
+						return;
+					}
+
+					const params = {
+						...args.e.data,
+						name: modal.result.text,
+						status: modal.result.status
+					};
+
+					console.log("params", params);
+
+					await DayPilot.Http.put(`/api/daypilot/appointments/${params.id}`, params);
+					calendar.events.update(modal.result);
+				}
+			});
+		calendar.init();
+
+		app.init();
+
+	</script>
+}

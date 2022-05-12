@@ -1,4 +1,6 @@
-﻿namespace BusinessLogicLibrary.Responses;
+﻿using DocAppLibrary.Enum;
+
+namespace BusinessLogicLibrary.Responses;
 
 public class AppointmentDto
 {
@@ -7,6 +9,7 @@ public class AppointmentDto
     public int PatientId { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    public StatusType Status { get; set; }
 
     public string DoctorName { get; set; }
     public int DoctorRoom { get; set; }

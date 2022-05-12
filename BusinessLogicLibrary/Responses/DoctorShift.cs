@@ -1,4 +1,4 @@
-﻿namespace WebDoctorAppointment.Models.ApiModels;
+﻿namespace BusinessLogicLibrary.Responses;
 
 public class DoctorShift
 {

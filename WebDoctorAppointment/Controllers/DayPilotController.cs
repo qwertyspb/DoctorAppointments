@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogicLibrary;
+using BusinessLogicLibrary.Enums;
+using BusinessLogicLibrary.Requests.Appointment;
+using BusinessLogicLibrary.Requests.Doctor;
 using DocAppLibrary.Entities;
-using DocAppLibrary.Interfaces;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using WebDoctorAppointment.Models;
 using WebDoctorAppointment.Models.ApiModels;
 
@@ -18,83 +21,120 @@ namespace WebDoctorAppointment.Controllers
     [Authorize(Roles = $"{Constants.ManagerRole},{Constants.DoctorRole},{Constants.PatientRole}")]
     public class DayPilotController : ControllerBase
     {
-        private readonly IUnitOfWork _uow;
+        private readonly IMediator _mediator;
+        private readonly UserManager<User> _userManager;
 
-        public DayPilotController(IUnitOfWork uow)
+        public DayPilotController(IMediator mediator, UserManager<User> userManager)
         {
-            _uow = uow;
+            _mediator = mediator;
+            _userManager = userManager;
         }
 
         [HttpGet("doctors")]
         public async Task<ActionResult<IEnumerable<DoctorViewModel>>> Doctors()
         {
-            var doctors = await _uow.GetRepository<Doctor>().Query()
+            var doctors = await _mediator.Send(new DoctorQueryAllRequest());
+            var model = doctors
                 .Select(x => new DoctorViewModel
                 {
                     Id = x.Id,
                     Name = $"{x.Name}, к.{x.Room}"
                 })
-                .ToListAsync();
+                .ToList();
 
-            return Ok(doctors);
+            return Ok(model);
         }
 
-        [HttpPost("appointment/create")]
+        [HttpPost("appointments/create")]
         public async Task<IActionResult> AddAppointments(AppointmentRange range)
         {
-            var doctor = await _uow.GetRepository<Doctor>().GetById(range.DoctorId);
-            if (doctor == null)
-                return BadRequest();
+            var isSuccess = await _mediator.Send(new CreateAppointmentsRequest
+            {
+                DoctorId = range.Resource,
+                Start = range.Start,
+                End = range.End,
+                Scale = Enum.Parse<SlotDurationType>(range.Scale, true)
+            });
 
-            var slots = TimeLineService.GenerateSlots(range.Start, range.End, range.Scale);
-            // TODO: save appointments here
-
-            return NoContent();
+            return isSuccess ? NoContent() : BadRequest();
         }
 
         [HttpDelete("appointment/{id:int}")]
         public async Task<IActionResult> DeleteAppointment(int id)
         {
-            var repo = _uow.GetRepository<Appointment>();
-            await repo.Delete(id);
-            await repo.Save();
+            await _mediator.Send(new AppointmentDeleteRequest { Id = id });
             return NoContent();
         }
 
-        [HttpPost("clear")]
-        public async Task<IActionResult> PostAppointmentClear(TimeCell range)
+        [HttpPost("appointments/clear")]
+        public async Task<IActionResult> PostAppointmentClear(ClearRange range)
         {
-            var start = range.Start;
-            var end = range.End;
-
-            var repo = _uow.GetRepository<Appointment>();
-            // TODO: change code
-            await repo.Delete(x => /*x.Status == "free" && */!((x.EndTime <= start) || (x.StartTime >= end)));
-            await repo.Save();
-
+            await _mediator.Send(new ClearAppointmentsRequest
+            {
+                Start = range.Start,
+                End = range.End
+            });
             return NoContent();
         }
 
         [HttpGet("appointments")]
-        public ActionResult<IEnumerable<AppointmentSlot>> GetAppointments(DateTime start, DateTime end)
+        [Authorize(Roles = $"{Constants.ManagerRole},{Constants.DoctorRole}")]
+        public async Task<ActionResult<IEnumerable<AppointmentSlot>>> GetAppointments(DateTime start, DateTime end)
         {
-            var today = DateTime.Today;
-            today = DateTime.SpecifyKind(today, DateTimeKind.Unspecified);
-            var result = new[]
+            var doctorId = default(int?);
+            if (User.IsInRole(Constants.DoctorRole))
+                doctorId = await GetClientId();
+            
+            var appointments = await _mediator.Send(new GetAppointmentsRequest
             {
-                new AppointmentSlot
-                {
-                    Id = 1,
-                    DoctorId = 1,
-                    PatientId = 1,
-                    PatientName = "qwerty",
-                    Status = "free",
-                    Start = today.AddHours(10),
-                    End = today.AddHours(11),
-                }
-            };
+                Start = start,
+                End = end,
+                DoctorId = doctorId
+            });
 
-            return Ok(result);
+            var model = appointments.Select(x => new AppointmentSlot
+            {
+                Id = x.Id,
+                DoctorId = x.DoctorId,
+                Start = x.StartTime,
+                End = x.EndTime,
+                Status = x.Status.ToString().ToLower()
+            });
+
+            return Ok(model);
+        }
+
+        [HttpGet("free")]
+        [Authorize(Roles = Constants.PatientRole)]
+        public async Task<ActionResult<IEnumerable<AppointmentSlot>>> GetPatientAppointments(DateTime start,
+            DateTime end)
+        {
+            var patientId = await GetClientId();
+            var appointments = await _mediator.Send(new GetPatientAppointmentsRequest
+            {
+                Start = start,
+                End = end,
+                PatientId = patientId!.Value
+            });
+
+            var model = appointments.Select(x => new AppointmentSlot
+            {
+                Id = x.Id,
+                DoctorId = x.DoctorId,
+                Start = x.StartTime,
+                End = x.EndTime,
+                Status = x.Status.ToString().ToLower(),
+                DoctorName = x.DoctorName,
+                PatientName = string.IsNullOrEmpty(x.PatientName) ? $"{x.DoctorName}, к.{x.DoctorRoom}" : x.PatientName
+            });
+
+            return Ok(model);
+        }
+
+        private async Task<int?> GetClientId()
+        {
+            var user = await _userManager.FindByNameAsync(User.Identity!.Name);
+            return user.Uid;
         }
     }
 }

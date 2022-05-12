@@ -1,0 +1,134 @@
+﻿@{
+	ViewData["Title"] = "Запись на прием";
+}
+
+<h4>Запись на прием</h4>
+<hr />
+
+<div class="row">
+	<div class="col-auto">
+		<div id="nav"></div>
+	</div>
+	<div class="col">
+		<div id="calendar"></div>
+	</div>
+</div>
+
+@section Scripts {
+	@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+	<script src="~/lib/daypilot/daypilot-all.min.js"></script>
+
+	<script>
+		const app = {
+			async loadEvents(day) {
+				const start = nav.visibleStart() > DayPilot.Date.now() ? nav.visibleStart() : DayPilot.Date.now();
+				const end = nav.visibleEnd();
+
+				const { data } = await DayPilot.Http.get(`/api/daypilot/free?start=${start}&end=${end}`);
+
+				if (day) {
+					calendar.startDate = day;
+				}
+				calendar.events.list = data;
+				calendar.update();
+
+				nav.events.list = data;
+				nav.update();
+			},
+			init() {
+				app.loadEvents();
+			}
+		};
+
+		const nav = new DayPilot.Navigator("nav",
+			{
+				selectMode: "week",
+				locale: "ru-ru",
+				showMonths: 3,
+				skipMonths: 3,
+				onTimeRangeSelected: (args) => {
+					const weekStarts = DayPilot.Locale.find(nav.locale).weekStarts;
+					const start = args.start.firstDayOfWeek(weekStarts);
+					const end = args.start.addDays(7);
+					app.loadEvents(start, end);
+				}
+
+			});
+		nav.init();
+
+		const calendar = new DayPilot.Calendar("calendar",
+			{
+				viewType: "Week",
+				locale: "ru-ru",
+				timeRangeSelectedHandling: "Disabled",
+				eventMoveHandling: "Disabled",
+				eventResizeHandling: "Disabled",
+				eventArrangement: "SideBySide",
+				onBeforeEventRender: (args) => {
+					switch (args.data.status) {
+					case "free":
+						args.data.backColor = "#3d85c6"; // blue
+						args.data.barHidden = true;
+						args.data.borderColor = "darker";
+						args.data.fontColor = "white";
+						args.data.html = `Доступно<br/>${args.data.doctorName}`;
+						args.data.toolTip = "Click to request this time slot";
+						break;
+					case "waiting":
+						args.data.backColor = "#e69138"; // orange
+						args.data.barHidden = true;
+						args.data.borderColor = "darker";
+						args.data.fontColor = "white";
+						args.data.html = "Ваша запись на прием, ожидание подтверждения";
+						break;
+					case "confirmed":
+						args.data.backColor = "#6aa84f"; // green
+						args.data.barHidden = true;
+						args.data.borderColor = "darker";
+						args.data.fontColor = "white";
+						args.data.html = "Ваша запись на прием подтверждена";
+						break;
+					}
+				},
+				onEventClick: async (args) => {
+					if (args.e.data.status !== "free") {
+						calendar.message("Выберите свободный слот для записи на прием.");
+						return;
+					}
+
+					const form = [
+						{ name: "Запись на прием" },
+						{ name: "С", id: "start", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
+						{ name: "По", id: "end", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
+						{ name: "ФИО", id: "name" }
+					];
+
+					const data = {
+						id: args.e.id(),
+						start: args.e.start(),
+						end: args.e.end(),
+						patient: app.patientId
+					};
+
+					const options = {
+						focus: "name",
+						locale: "ru-ru"
+					};
+
+					const modal = await DayPilot.Modal.form(form, data, options);
+					if (modal.canceled) {
+						return;
+					}
+
+					await DayPilot.Http.put(`/api/daypilot/appointments/${data.id}/request`, modal.result);
+
+					args.e.data.status = "waiting";
+					calendar.events.update(args.e.data);
+				}
+			});
+		calendar.init();
+
+		app.init();
+
+	</script>
+}

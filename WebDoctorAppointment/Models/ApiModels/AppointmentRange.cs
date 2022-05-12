@@ -1,7 +1,11 @@
-﻿namespace WebDoctorAppointment.Models.ApiModels;
+﻿using System;
 
-public class AppointmentRange : TimeCell
+namespace WebDoctorAppointment.Models.ApiModels;
+
+public class AppointmentRange
 {
-    public int DoctorId { get; set; }
+    public DateTime Start { get; set; }
+    public DateTime End { get; set; }
+    public int Resource { get; set; }
     public string Scale { get; set; }
 }

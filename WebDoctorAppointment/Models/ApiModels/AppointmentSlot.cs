@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using BusinessLogicLibrary.Responses;
 
 namespace WebDoctorAppointment.Models.ApiModels;
 
@@ -16,4 +17,6 @@ public class AppointmentSlot : TimeCell
 
     [JsonPropertyName("patient")]
     public int PatientId { set; get; }
+
+    public string DoctorName { get; set; }
 }

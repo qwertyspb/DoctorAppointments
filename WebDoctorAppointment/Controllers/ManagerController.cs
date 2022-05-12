@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 namespace WebDoctorAppointment.Controllers
 {
     [Authorize(Roles = Constants.ManagerRole)]
-    public class Manager : Controller
+    public class ManagerController : Controller
     {
         public IActionResult Index()
         {
-            return View(TimeLineService.DoctorShift);
+            return View(Constants.Shifts);
         }
     }
 }
