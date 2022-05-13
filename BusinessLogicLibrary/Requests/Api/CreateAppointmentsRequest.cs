@@ -1,7 +1,7 @@
 ﻿using BusinessLogicLibrary.Enums;
 using MediatR;
 
-namespace BusinessLogicLibrary.Requests.Appointment;
+namespace BusinessLogicLibrary.Requests.Api;
 
 public class CreateAppointmentsRequest : IRequest<bool>
 {

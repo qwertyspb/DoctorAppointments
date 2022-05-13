@@ -2,12 +2,14 @@
 using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogicLibrary;
+using DocAppLibrary;
 using DocAppLibrary.Entities;
 using DocAppLibrary.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebDoctorAppointment.Extensions;
 using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
@@ -18,14 +20,16 @@ namespace WebDoctorAppointment.Controllers
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly DocVisitContext _dbContext;
 
         public UserController(IUnitOfWork uow, UserManager<User> userManager, SignInManager<User> signInManager,
-            RoleManager<IdentityRole> roleManager)
+            RoleManager<IdentityRole> roleManager, DocVisitContext dbContext)
         {
             _uow = uow;
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _dbContext = dbContext;
         }
 
         [HttpGet]
@@ -55,7 +59,7 @@ namespace WebDoctorAppointment.Controllers
             await _userManager.AddToRoleAsync(user, Constants.PatientRole);
 
             await _signInManager.SignInAsync(user, false);
-            return RedirectToAction("Index", "Patients");
+            return RedirectToAction("Index", "Patient");
         }
 
         [HttpGet]
@@ -158,33 +162,14 @@ namespace WebDoctorAppointment.Controllers
         {
             const int pageSize = 10;
 
-            var query = from u in _userManager.Users
-                join d in _uow.GetRepository<Doctor>().Query()
-                    on u.Uid equals d.Id into grouping
-                from p in grouping.DefaultIfEmpty()
-                select new { User = u, Doctor = p };
-
-            if (!string.IsNullOrEmpty(name))
-                query = query.Where(x =>
-                    (x.Doctor != null && x.Doctor.Name.Contains(name)) || x.User.UserName.Contains(name));
-
-            query = query.OrderBy(x => x.User.UserName);
+            var role = await _roleManager.FindByNameAsync(Constants.DoctorRole);
+            var query = _dbContext.GetEmployees(role.Id, name);
 
             var count = await query.CountAsync();
-            var items = await query
+            var employees = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-            var employees = items.Select(x => new EmployeeViewModel
-            {
-                Id = x.User.Id,
-                UserName = x.User.UserName,
-                Email = x.User.Email,
-                Phone = x.User.PhoneNumber,
-                LockoutEnd = x.User.LockoutEnd,
-                Name = x.Doctor?.Name,
-                Room = x.Doctor?.Room
-            });
 
             var model = new EmployeesViewModel
             {

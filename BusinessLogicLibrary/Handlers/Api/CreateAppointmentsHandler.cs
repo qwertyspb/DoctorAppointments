@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
-using BusinessLogicLibrary.Requests.Appointment;
+using BusinessLogicLibrary.Requests.Api;
 using BusinessLogicLibrary.Responses;
 using DocAppLibrary.Interfaces;
 using MediatR;
 using Dal = DocAppLibrary.Entities;
 
-namespace BusinessLogicLibrary.Handlers.Appointment;
+namespace BusinessLogicLibrary.Handlers.Api;
 
 public class CreateAppointmentsHandler : IRequestHandler<CreateAppointmentsRequest, bool>
 {
@@ -34,7 +34,7 @@ public class CreateAppointmentsHandler : IRequestHandler<CreateAppointmentsReque
 
         var slots = TimeLineService.GenerateSlots(request.Start, request.End, request.Scale);
         slots.ForEach(x => x.DoctorId = doctor.Id);
-            
+
         var appRepo = _unitOfWork.GetRepository<Dal.Appointment>();
         var appointments = _mapper.Map<List<Dal.Appointment>>(slots);
         foreach (var item in appointments)

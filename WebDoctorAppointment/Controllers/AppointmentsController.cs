@@ -16,7 +16,7 @@ using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
 {
-	[Authorize(Roles = Constants.ManagerRole)]
+	[Authorize(Roles = Constants.DoctorRole)]
     public class AppointmentsController : Controller
     {
         private readonly IMediator _mediator;

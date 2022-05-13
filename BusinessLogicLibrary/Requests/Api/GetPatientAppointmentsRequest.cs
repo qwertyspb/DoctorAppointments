@@ -1,7 +1,7 @@
 ﻿using BusinessLogicLibrary.Responses;
 using MediatR;
 
-namespace BusinessLogicLibrary.Requests.Appointment;
+namespace BusinessLogicLibrary.Requests.Api;
 
 public class GetPatientAppointmentsRequest : IRequest<List<AppointmentDto>>
 {

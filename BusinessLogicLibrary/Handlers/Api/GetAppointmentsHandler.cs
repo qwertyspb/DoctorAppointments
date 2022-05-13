@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using BusinessLogicLibrary.Requests.Appointment;
+using BusinessLogicLibrary.Requests.Api;
 using BusinessLogicLibrary.Responses;
 using DocAppLibrary.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Dal = DocAppLibrary.Entities;
 
-namespace BusinessLogicLibrary.Handlers.Appointment;
+namespace BusinessLogicLibrary.Handlers.Api;
 
 public class GetAppointmentsHandler : IRequestHandler<GetAppointmentsRequest, List<AppointmentDto>>
 {
@@ -24,6 +24,7 @@ public class GetAppointmentsHandler : IRequestHandler<GetAppointmentsRequest, Li
         var query = _unitOfWork.GetRepository<Dal.Appointment>()
             .Query()
             .Include(x => x.Doctor)
+            .Include(x => x.Patient)
             .Where(x => !(x.EndTime <= request.Start || x.StartTime >= request.End));
         if (request.DoctorId.HasValue)
             query = query.Where(x => x.DoctorId == request.DoctorId);

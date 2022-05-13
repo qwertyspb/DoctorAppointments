@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using BusinessLogicLibrary.Requests.Appointment;
+using BusinessLogicLibrary.Requests.Api;
 using BusinessLogicLibrary.Responses;
 using DocAppLibrary.Enum;
 using DocAppLibrary.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace BusinessLogicLibrary.Handlers.Appointment;
+namespace BusinessLogicLibrary.Handlers.Api;
 
 public class GetPatientAppointmentsHandler : IRequestHandler<GetPatientAppointmentsRequest, List<AppointmentDto>>
 {
@@ -26,7 +26,7 @@ public class GetPatientAppointmentsHandler : IRequestHandler<GetPatientAppointme
             .Include(x => x.Doctor)
             .Include(x => x.Patient)
             .Where(x =>
-                (x.Status == StatusType.Free || (x.Status != StatusType.Free && x.PatientId == request.PatientId)) &&
+                (x.Status == StatusType.Free || x.Status != StatusType.Free && x.PatientId == request.PatientId) &&
                 !(x.EndTime <= request.Start || x.StartTime >= request.End))
             .ToListAsync(token);
 

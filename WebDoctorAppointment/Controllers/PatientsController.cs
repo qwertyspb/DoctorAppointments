@@ -11,7 +11,7 @@ using WebDoctorAppointment.Models;
 
 namespace WebDoctorAppointment.Controllers
 {
-	[Authorize(Roles = Constants.PatientRole)]
+	[Authorize(Roles = Constants.ManagerRole)]
     public class PatientsController : Controller
     {
         private readonly IMapper _mapper;

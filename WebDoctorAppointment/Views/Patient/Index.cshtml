@@ -1,8 +1,8 @@
 ﻿@{
-	ViewData["Title"] = "Запись на прием";
+	ViewData["Title"] = "Записаться на прием";
 }
 
-<h4>Запись на прием</h4>
+<h5>Записаться на прием</h5>
 <hr />
 
 <div class="row">
@@ -100,7 +100,7 @@
 						{ name: "Запись на прием" },
 						{ name: "С", id: "start", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
 						{ name: "По", id: "end", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
-						{ name: "ФИО", id: "name" }
+						//{ name: "ФИО", id: "name" }
 					];
 
 					const data = {
@@ -120,7 +120,7 @@
 						return;
 					}
 
-					await DayPilot.Http.put(`/api/daypilot/appointments/${data.id}/request`, modal.result);
+					await DayPilot.Http.put(`/api/daypilot/appointment/${data.id}/request`);//, modal.result);
 
 					args.e.data.status = "waiting";
 					calendar.events.update(args.e.data);

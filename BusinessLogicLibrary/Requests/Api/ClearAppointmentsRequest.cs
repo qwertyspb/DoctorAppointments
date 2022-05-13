@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace BusinessLogicLibrary.Requests.Appointment;
+namespace BusinessLogicLibrary.Requests.Api;
 
 public class ClearAppointmentsRequest : IRequest
 {

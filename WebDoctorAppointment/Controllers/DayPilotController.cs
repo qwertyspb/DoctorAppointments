@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using BusinessLogicLibrary;
 using BusinessLogicLibrary.Enums;
-using BusinessLogicLibrary.Requests.Appointment;
-using BusinessLogicLibrary.Requests.Doctor;
+using BusinessLogicLibrary.Requests.Api;
 using DocAppLibrary.Entities;
+using DocAppLibrary.Enum;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -31,9 +31,10 @@ namespace WebDoctorAppointment.Controllers
         }
 
         [HttpGet("doctors")]
+        [Authorize(Roles = Constants.ManagerRole)]
         public async Task<ActionResult<IEnumerable<DoctorViewModel>>> Doctors()
         {
-            var doctors = await _mediator.Send(new DoctorQueryAllRequest());
+            var doctors = await _mediator.Send(new GetDoctorsRequest());
             var model = doctors
                 .Select(x => new DoctorViewModel
                 {
@@ -46,6 +47,7 @@ namespace WebDoctorAppointment.Controllers
         }
 
         [HttpPost("appointments/create")]
+        [Authorize(Roles = Constants.ManagerRole)]
         public async Task<IActionResult> AddAppointments(AppointmentRange range)
         {
             var isSuccess = await _mediator.Send(new CreateAppointmentsRequest
@@ -60,13 +62,15 @@ namespace WebDoctorAppointment.Controllers
         }
 
         [HttpDelete("appointment/{id:int}")]
+        [Authorize(Roles = $"{Constants.ManagerRole},{Constants.DoctorRole}")]
         public async Task<IActionResult> DeleteAppointment(int id)
         {
-            await _mediator.Send(new AppointmentDeleteRequest { Id = id });
+            await _mediator.Send(new DeleteAppointmentRequest { Id = id });
             return NoContent();
         }
 
         [HttpPost("appointments/clear")]
+        [Authorize(Roles = Constants.ManagerRole)]
         public async Task<IActionResult> PostAppointmentClear(ClearRange range)
         {
             await _mediator.Send(new ClearAppointmentsRequest
@@ -98,7 +102,8 @@ namespace WebDoctorAppointment.Controllers
                 DoctorId = x.DoctorId,
                 Start = x.StartTime,
                 End = x.EndTime,
-                Status = x.Status.ToString().ToLower()
+                Status = x.Status.ToString().ToLower(),
+                PatientName = x.PatientName
             });
 
             return Ok(model);
@@ -129,6 +134,40 @@ namespace WebDoctorAppointment.Controllers
             });
 
             return Ok(model);
+        }
+
+        [HttpPut("appointment/{id:int}/request")]
+        [Authorize(Roles = Constants.PatientRole)]
+        public async Task<IActionResult> PutAppointmentSlotRequest(int id)
+        {
+            var patientId = await GetClientId();
+            if (!patientId.HasValue)
+                return BadRequest();
+
+            var isSuccess = await _mediator.Send(new SetAppointmentPatientRequest
+            {
+                Id = id,
+                PatientId = patientId.Value
+            });
+
+            return isSuccess ? NoContent() : BadRequest();
+        }
+
+        [HttpPut("appointment")]
+        [Authorize(Roles = Constants.DoctorRole)]
+        public async Task<IActionResult> PutAppointmentSlot(AppointmentSlotUpdate model)
+        {
+            var doctorId = await GetClientId();
+            if (!doctorId.HasValue)
+                return BadRequest();
+
+            var isSuccess = await _mediator.Send(new UpdateAppointmentRequest
+            {
+                Id = model.Id,
+                Status = Enum.Parse<StatusType>(model.Status, true)
+            });
+
+            return isSuccess ? NoContent() : BadRequest();
         }
 
         private async Task<int?> GetClientId()

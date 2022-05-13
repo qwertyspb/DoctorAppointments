@@ -1,10 +1,10 @@
-﻿using BusinessLogicLibrary.Requests.Appointment;
+﻿using BusinessLogicLibrary.Requests.Api;
 using DocAppLibrary.Enum;
 using DocAppLibrary.Interfaces;
 using MediatR;
 using Dal = DocAppLibrary.Entities;
 
-namespace BusinessLogicLibrary.Handlers.Appointment;
+namespace BusinessLogicLibrary.Handlers.Api;
 
 public class ClearAppointmentsHandler : AsyncRequestHandler<ClearAppointmentsRequest>
 {

@@ -1,8 +1,8 @@
 ﻿@{
-	ViewData["Title"] = "Запись на прием";
+	ViewData["Title"] = "Подтвердить запись на прием";
 }
 
-<h4>Запись на прием</h4>
+<h5>Подтвердить запись на прием</h5>
 <hr />
 
 <div class="row">
@@ -68,13 +68,15 @@
 				showMonths: 3,
 				skipMonths: 3,
 				onTimeRangeSelected: (args) => {
-					app.loadEvents(args.start.firstDayOfWeek(), args.start.addDays(7));
+					const weekStarts = DayPilot.Locale.find(nav.locale).weekStarts;
+					const start = args.start.firstDayOfWeek(weekStarts);
+					const end = args.start.addDays(7);
+					app.loadEvents(start, end);
 				}
 			});
 		nav.init();
 
-		const calendar = new DayPilot.Calendar("calendar",
-			{
+		const calendar = new DayPilot.Calendar("calendar", {
 				viewType: "Week",
 				locale: "ru-ru",
 				timeRangeSelectedHandling: "Disabled",
@@ -85,7 +87,7 @@
 						start: args.newStart,
 						end: args.newEnd
 					};
-					const { data } = await DayPilot.Http.put(`/api/daypilot/appointments/${appointment.id}`, appointment);
+					const { data } = await DayPilot.Http.put(`/api/daypilot/appointment`, appointment);
 				},
 				onEventResized: async (args) => {
 					const appointment = {
@@ -93,11 +95,11 @@
 						start: args.newStart,
 						end: args.newEnd
 					};
-					const { data } = await DayPilot.Http.put(`/api/daypilot/appointments/${appointment.id}`, appointment);
+					const { data } = await DayPilot.Http.put(`/api/daypilot/appointment`, appointment);
 				},
 				onEventDeleted: async (args) => {
 					const id = args.e.data.id;
-					await DayPilot.Http.delete(`/api/daypilot/appointments/${id}`);
+					await DayPilot.Http.delete(`/api/daypilot/appointment/${id}`);
 				},
 				onBeforeEventRender: (args) => {
 					switch (args.data.status) {
@@ -122,10 +124,9 @@
 					}
 				},
 				onEventClick: async (args) => {
-
 					const form = [
 						{ name: "Изменить запись на прием" },
-						{ name: "ФИО", id: "text" },
+						{ name: "ФИО", id: "text", disabled: true },
 						{
 							name: "Статус",
 							id: "status",
@@ -133,12 +134,12 @@
 							options: [
 								{ name: "Доступно", id: "free" },
 								{ name: "Ожидание", id: "waiting" },
-								{ name: "Подтверждено", id: "confirmed" },
+								{ name: "Подтверждено", id: "confirmed" }
 							]
 						},
 						{ name: "С", id: "start", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
 						{ name: "По", id: "end", dateFormat: "MMMM d, yyyy h:mm tt", disabled: true },
-						{ name: "Доктор", id: "resource", disabled: true },// options: app.doctors },
+						//{ name: "Доктор", id: "resource", disabled: true } // options: app.doctors },
 					];
 
 					const data = args.e.data;
@@ -159,9 +160,9 @@
 						status: modal.result.status
 					};
 
-					console.log("params", params);
+					//console.log("params", params);
 
-					await DayPilot.Http.put(`/api/daypilot/appointments/${params.id}`, params);
+					await DayPilot.Http.put(`/api/daypilot/appointment`, params);
 					calendar.events.update(modal.result);
 				}
 			});
